@@ -1,5 +1,4 @@
 #!/usr/bin/python
-
 #Now with source control
 
 import binascii
