@@ -158,7 +158,7 @@ def getNAvgHammingDistances(data, maxKeyLength):
         #hd = (float(hd1+hd2)/2.0)/float(keysize)
         #avgHDs.append([hd, keysize])
     avgHDs.sort()
-    print avgHDs
+    #print avgHDs
     return avgHDs
 
 def set1challenge6():
@@ -171,54 +171,52 @@ def set1challenge6():
     maxKeySize=42
 
     hds = getNAvgHammingDistances(data, maxKeySize)
-    print "Best keysize and distance: ", hds[0][1], hds[0][0]
-    print "Second best keysize and distance: ", hds[1][1], hds[1][0]
+    #print "Best keysize and distance: ", hds[0][1], hds[0][0]
+    #print "Second best keysize and distance: ", hds[1][1], hds[1][0]
     #split the data into chunks of size bestKeySize
-    
-    # Need a better way of finding the keysize
-    #TODO
 
-    bestEnglishScore=-1
-    bestVigenereKey=""
-    plaintext=""
-    for s in range(2,maxKeySize):
-      bestKeySize=s
-      lines=[data[i:i+bestKeySize] for i in range(0, len(data), bestKeySize)]
-      #print len(lines)
-      rearrangedLines=""
+    # Algorithm idea from https://trustedsignal.blogspot.com/2015/06/xord-play-normalized-hamming-distance.html
+    gcd12=gcd(hds[0][1], hds[1][1])
+    gcd13=gcd(hds[0][1], hds[2][1])
+    gcd23=gcd(hds[1][1], hds[2][1])
+    bestKeySize=-1
+    if (gcd12 != 1):
+        # This next one could possibly be improved to search a configurable top n
+        if (gcd12 == hds[0][1] or gcd12 == hds[1][1] or gcd12 == hds[2][1] or gcd12 == hds[3][1]):
+            if (gcd12==gcd13 and gcd12==23) or (gcd12 == hds[0][1] or gcd12==[1][1]):
+                bestKeySize=gcd12
+    if (bestKeySize == -1):
+        bestKeySize=hds[0][1]
 
-      for i in range(0,bestKeySize):
+    lines=[data[i:i+bestKeySize] for i in range(0, len(data), bestKeySize)]
+    rearrangedLines=""
+
+    for i in range(0,bestKeySize):
         for line in lines:
             try:
                 rearrangedLines+=line[i]
             except IndexError:
                 continue
       
-      vigenereLines=[rearrangedLines[i:i+len(lines)] for i in range(0,len(data), len(lines))]
-      #print vigenereLines
-      i=0
-      vigenereKeys=""
-      #print vigenereLines
+    vigenereLines=[rearrangedLines[i:i+len(lines)] for i in range(0,len(data), len(lines))]
+    #print vigenereLines
+    i=0
+    vigenereKeys=""
+    #print vigenereLines
 
-      for line in vigenereLines:
+    for line in vigenereLines:
         #print '--------------------------'
         #print len(line)
         #print line.encode('hex')
         vigenereKey, vigenereScore, vigenerePlaintext=bestDecryption(line.encode('hex'))
         #print vigenereKey, vigenereScore
         vigenereKeys+="{0:0{1}x}".format(vigenereKey,2)
-      #print vigenereKeys.decode('hex')
-      maybePlain = vigenereCrypt(data, vigenereKeys.decode('hex')).decode('hex')
-      #print maybePlain
-      score =englishScore(maybePlain)
-      if score > bestEnglishScore:
-          bestEnglishScore = score
-          plaintext = maybePlain
-          bestVigenereKey=vigenereKeys.decode('hex')
-
-    print bestEnglishScore
-    print plaintext
-    print bestVigenereKey
+    maybePlain = vigenereCrypt(data, vigenereKeys.decode('hex')).decode('hex')
+    #print maybePlain
+    score =englishScore(maybePlain)
+    #print score
+    print maybePlain
+    print vigenereKeys.decode('hex')
     
 
 set1challenge6()
