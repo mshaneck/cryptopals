@@ -4,6 +4,7 @@ import binascii
 import base64
 import string
 from fractions import gcd
+from Crypto.Cipher import AES
 
 #Set 1, Challenge 1
 def convertHexToBase64(hexString):
@@ -219,4 +220,21 @@ def set1challenge6():
     print vigenereKeys.decode('hex')
     
 
-set1challenge6()
+#set1challenge6()
+
+
+def set1challenge7():
+    x = base64.b64decode(open('set1.challenge7.txt', 'r').read())
+    print "Decrypting AES ECB mode"
+    key = b'YELLOW SUBMARINE'
+    cipher = AES.new(key, AES.MODE_ECB)
+    y = cipher.decrypt(x)
+    print(y)
+
+#set1challenge7()
+
+def set1challenge8():
+    
+
+
+set1challenge8()    
