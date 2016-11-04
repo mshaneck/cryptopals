@@ -234,7 +234,31 @@ def set1challenge7():
 #set1challenge7()
 
 def set1challenge8():
-    
+    with open("set1.challenge8.txt") as f:
+        n=1
+        for line in f:
+            # Look for two blocks (16 bytes, i.e. 32 characters) that have a hamming distance of 0
+            line = line.rstrip('\n')
+            #print len(line)
+            for i in range(0,10):
+                for j in range(i+1,10):
+                    str1=line[i*32:(i+1)*32]
+                    str2=line[(j)*32:(j+1)*32]
+                    #print str1, str2
+                    if str2=="":
+                        continue
+                    hd = hammingDistance(str1, str2)
+                    #print hd
+                    if hd==0:
+                        print "Line number ", n, " is using ECB mode"
+                        print "Blocks that are the same: ",  i, ", ", j
+                        o = []
+                        while line:
+                            o.append(line[:32])
+                            line = line[32:]
+                        print o
+            n = n+1
+
 
 
 set1challenge8()    
