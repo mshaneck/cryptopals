@@ -20,6 +20,20 @@ def pkcs7Padding(data, blockSize):
     bytesNeeded = blockSize-len(data)%blockSize
     return data + chr(bytesNeeded)*bytesNeeded
 
+def isPkcs7PaddingValid(data, blockSize):
+    lastChar=data[-1]
+    for x in range(len(data)-ord(lastChar), len(data)):
+        if data[x] != lastChar:
+            return False
+    return True
+
+def removePkcs7Padding(data, blockSize):
+    if isPkcs7PaddingValid(data, blockSize):
+        lastChar=data[-1]
+        return data[:len(data)-ord(lastChar)]
+    else:
+        return data
+
 def set2challenges9():
     print pkcs7Padding("YELLOW SUBMARINE", 20)
     print pkcs7Padding("Testing Testing 123", 10)
@@ -182,4 +196,46 @@ def getHexBlock(ciphertext, i, blockSize):
     #print "------"
     return block
 
-set2challenge12()
+#set2challenge12()
+
+def profileFor(email):
+    #First strip out & and = from email
+    email = email.replace("&","")
+    email = email.replace("=","")
+
+    profileString = "email="+email+"&uid=10&role=user"
+    print parseCookie(profileString)
+    return profileString
+
+
+def parseCookie(cookie):
+    kvPairs = cookie.split("&")
+    kvObject={}
+    for pair in kvPairs:
+        kv = pair.split("=")
+        kvObject[kv[0]] = kv[1]
+    return kvObject
+
+
+
+def set2challenge13():
+    randomKey = getRandomAESKey()
+
+    "email=foo@bar.co m&uid=10&role=us er"
+    "email=xxxxxxxxxx adminBBBBBBBBBBB &uid=10&role=use r"
+    "email=fooby@bar. com&uid=10&role= adminBBBBBBBBBBB"
+
+    profile1 = profileFor("xxxxxxxxxxadmin"+chr(11)*11)
+    profile2 = profileFor("fooby@bar.com")
+
+    ciphertext1 = aes_128_ecb(pkcs7Padding(profile1, AES.block_size), randomKey, ENCRYPT)
+    ciphertext2 = aes_128_ecb(pkcs7Padding(profile2, AES.block_size), randomKey, ENCRYPT)
+    ciphertext3 = ciphertext2[:32]+ciphertext1[16:32]
+
+    finalProfile = aes_128_ecb(ciphertext3, randomKey, DECRYPT)
+    print parseCookie(removePkcs7Padding(finalProfile, AES.block_size))
+
+
+
+set2challenge13()
+
