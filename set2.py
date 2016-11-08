@@ -9,6 +9,8 @@ ENCRYPT="e"
 DECRYPT="d"
 USE_PREFIX=True
 
+class PaddingNotValidException(Exception):
+    pass
 
 def getRandomString():
     length = random.randint(1,200)
@@ -29,8 +31,11 @@ def pkcs7Padding(data, blockSize):
 
 def isPkcs7PaddingValid(data, blockSize):
     lastChar=data[-1]
+    #print "Last character is ", lastChar.encode('hex')
     for x in range(len(data)-ord(lastChar), len(data)):
+        #print data[x].encode('hex')
         if data[x] != lastChar:
+            raise PaddingNotValidException("The padding is not valid")
             return False
     return True
 
@@ -343,4 +348,21 @@ def set2challenge14():
 
     print decryptedMessage.rstrip('\n') # Rstrip since the plaintext already includes a newline
 
-set2challenge14()
+#set2challenge14()
+
+def set2challenge15():
+    blockSize=8
+    data1="Test" + '\x04'*4
+    data2 = "test" + '\x01\x02\x03\x04'
+    try:
+        print isPkcs7PaddingValid(data1, blockSize)
+        print isPkcs7PaddingValid(data2, blockSize)
+    except PaddingNotValidException as e:
+        print e
+
+set2challenge15()
+
+
+
+
+
