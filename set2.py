@@ -360,9 +360,46 @@ def set2challenge15():
     except PaddingNotValidException as e:
         print e
 
-set2challenge15()
+#set2challenge15()
+
+def cbc_encrypt_oracle(plaintext):
+    prefix="comment1=cooking%20MCs;userdata="
+    suffix=";comment2=%20like%20a%20pound%20of%20bacon"
+    plaintext = pkcs7Padding(prefix+plaintext.replace(";","").replace("=","")+suffix, AES.block_size)
+    iv="AAAAAAAAAAAAAAAA"
+    return aes_128_cbc(plaintext, consistent_key, iv, ENCRYPT)
 
 
+def cbc_decrypt_oracle(ciphertext):
+    plaintext = removePkcs7Padding(aes_128_cbc(ciphertext, consistent_key, "", DECRYPT), AES.block_size)
+    #print plaintext
+    #print splitIntoBlocks(plaintext, 16)
+    pairs = plaintext.split(";")
+    for pair in pairs:
+        keyValue = pair.split('=')
+        #print keyValue[0], " = ", keyValue[1]
+        if keyValue[0]=="admin" and keyValue[1]=="true":
+            print "W00t W00t. You win!"
+            return True
+    print "FAIL!"
 
 
+def set2challenge16():
+    plaintext = "Zhis iZ a tester:admin<true"
+    ciphertext=cbc_encrypt_oracle(plaintext)
+    #print ciphertext
+    blocks = splitIntoBlocks(ciphertext.encode('hex'), AES.block_size*2)
+    #print blocks
+    #print blocks[3]
+    x = "01000000000001000000000000000000"
+    #print x
+    blocks[3] = hexxor(x, blocks[3])
+    #print blocks[3]
+    #print blocks
+    ciphertext = "".join(blocks).decode('hex')
+    #print ciphertext
+    cbc_decrypt_oracle(ciphertext)
+
+
+set2challenge16()
 
