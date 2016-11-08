@@ -233,12 +233,29 @@ def set1challenge7():
 
 #set1challenge7()
 
+
+def isECB(ciphertext):
+    ciphertext = ciphertext.encode('hex')
+    #Assume 16 byte blocks in hex string format
+    blocks = len(ciphertext)/32
+    for i in range(0,blocks):
+        for j in range(i+1,blocks):
+            str1=ciphertext[i*32:(i+1)*32]
+            str2=ciphertext[j*32:(j+1)*32]
+            if str2=="":
+                continue
+            hd=hammingDistance(str1, str2)
+            if hd == 0:
+                return True
+    return False
+
 def set1challenge8():
     with open("set1.challenge8.txt") as f:
         n=1
         for line in f:
             # Look for two blocks (16 bytes, i.e. 32 characters) that have a hamming distance of 0
             line = line.rstrip('\n')
+            print isECB(line.decode('hex'))
             #print len(line)
             for i in range(0,10):
                 for j in range(i+1,10):
@@ -261,4 +278,4 @@ def set1challenge8():
 
 
 
-set1challenge8()    
+#set1challenge8()    
