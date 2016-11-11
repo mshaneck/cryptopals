@@ -31,11 +31,19 @@ def pkcs7Padding(data, blockSize):
 
 def isPkcs7PaddingValid(data, blockSize):
     lastChar=data[-1]
+    #print "Last Char = ", lastChar
+    #print blockSize
+    if (ord(lastChar) > blockSize or ord(lastChar)==0):
+        #raise PaddingNotValidException("The padding is not valid")
+        return False
     #print "Last character is ", lastChar.encode('hex')
+    #print data[len(data)-ord(lastChar):]
     for x in range(len(data)-ord(lastChar), len(data)):
+        #print x, len(data)-ord(lastChar), len(data)
+        #print data.encode('hex')
         #print data[x].encode('hex')
         if data[x] != lastChar:
-            raise PaddingNotValidException("The padding is not valid")
+            #raise PaddingNotValidException("The padding is not valid")
             return False
     return True
 
@@ -362,7 +370,7 @@ def set2challenge15():
 
 #set2challenge15()
 
-def cbc_encrypt_oracle(plaintext):
+def c16_cbc_encrypt_oracle(plaintext):
     prefix="comment1=cooking%20MCs;userdata="
     suffix=";comment2=%20like%20a%20pound%20of%20bacon"
     plaintext = pkcs7Padding(prefix+plaintext.replace(";","").replace("=","")+suffix, AES.block_size)
@@ -370,7 +378,7 @@ def cbc_encrypt_oracle(plaintext):
     return aes_128_cbc(plaintext, consistent_key, iv, ENCRYPT)
 
 
-def cbc_decrypt_oracle(ciphertext):
+def c16_cbc_decrypt_oracle(ciphertext):
     plaintext = removePkcs7Padding(aes_128_cbc(ciphertext, consistent_key, "", DECRYPT), AES.block_size)
     #print plaintext
     #print splitIntoBlocks(plaintext, 16)
@@ -386,7 +394,7 @@ def cbc_decrypt_oracle(ciphertext):
 
 def set2challenge16():
     plaintext = "Zhis iZ a tester:admin<true"
-    ciphertext=cbc_encrypt_oracle(plaintext)
+    ciphertext=c16_cbc_encrypt_oracle(plaintext)
     #print ciphertext
     blocks = splitIntoBlocks(ciphertext.encode('hex'), AES.block_size*2)
     #print blocks
@@ -398,8 +406,8 @@ def set2challenge16():
     #print blocks
     ciphertext = "".join(blocks).decode('hex')
     #print ciphertext
-    cbc_decrypt_oracle(ciphertext)
+    c16_cbc_decrypt_oracle(ciphertext)
 
 
-set2challenge16()
+#set2challenge16()
 
