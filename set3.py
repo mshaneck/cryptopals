@@ -140,13 +140,13 @@ def aes_128_ctr(plaintext, key, nonce):
 		cipherblock = aes_128_ecb(nonceandctr, key, ENCRYPT)
 		cipherblock = cipherblock[:len(blocks[i])]
 		ciphertext = ciphertext + hexxor(cipherblock.encode('hex'), blocks[i].encode('hex'))
-	return ciphertext
+	return ciphertext.decode('hex')
 		
 def set3challenge18():
 	ciphertext = base64.b64decode("L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ==")
 	key="YELLOW SUBMARINE"
 	nonce="\x00\x00\x00\x00\x00\x00\x00\x00"
-	print aes_128_ctr(ciphertext, key, nonce).decode('hex')
+	print aes_128_ctr(ciphertext, key, nonce)
 
 
 set3challenge18()
