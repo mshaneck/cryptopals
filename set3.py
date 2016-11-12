@@ -2,6 +2,7 @@
 from set2 import *
 from set1 import *
 
+from struct import *
 from Crypto.Cipher import AES
 from Crypto.Random import random
 import base64 
@@ -124,4 +125,39 @@ def set3challenge17():
 	print removePkcs7Padding(plaintext, 16)
 	#challenge17_consumeCiphertext(ciphertext)
 	
-set3challenge17()
+#set3challenge17()
+
+
+def aes_128_ctr(plaintext, key, nonce):
+	# Encrypt and decrypt is the same
+	blocks = splitIntoBlocks(plaintext, 16)
+	ciphertext = ""
+	#print nonce + pack('<q', 4)
+	for i in range(len(blocks)):
+		#print "Block ", i
+		#print nonce + pack('<q', i)
+		nonceandctr=nonce + pack('<q', i)
+		cipherblock = aes_128_ecb(nonceandctr, key, ENCRYPT)
+		cipherblock = cipherblock[:len(blocks[i])]
+		ciphertext = ciphertext + hexxor(cipherblock.encode('hex'), blocks[i].encode('hex'))
+	return ciphertext
+		
+def set3challenge18():
+	ciphertext = base64.b64decode("L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ==")
+	key="YELLOW SUBMARINE"
+	nonce="\x00\x00\x00\x00\x00\x00\x00\x00"
+	print aes_128_ctr(ciphertext, key, nonce).decode('hex')
+
+
+set3challenge18()
+
+
+
+
+
+
+
+
+
+
+
