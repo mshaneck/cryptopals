@@ -145,14 +145,15 @@ def aes_128_ctr(plaintext, key, nonce):
 def set3challenge18():
 	ciphertext = base64.b64decode("L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ==")
 	key="YELLOW SUBMARINE"
-	nonce="\x00\x00\x00\x00\x00\x00\x00\x00"
+	nonce=pack('<q', 0)
 	print aes_128_ctr(ciphertext, key, nonce)
 
+#set3challenge18()
 
-set3challenge18()
+def set3challenge19():
+	
 
-
-
+set3challenge19()
 
 
 
