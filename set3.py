@@ -5,7 +5,7 @@ from set1 import *
 from struct import *
 from Crypto.Cipher import AES
 from Crypto.Random import random
-import base64 
+import base64
 import string
 
 
@@ -31,7 +31,7 @@ def challenge17_produceCiphertext():
 	#for m in messages:
 		#print splitIntoBlocks(base64.b64decode(m), 16)
 	msg = random.randint(0,len(messages)-1)
-	
+
 	plaintext = pkcs7Padding(base64.b64decode(messages[msg]), AES.block_size)
 	iv = getRandomAESKey()
 	ciphertext = aes_128_cbc(plaintext, consistent_key, iv, ENCRYPT)
@@ -58,7 +58,7 @@ def cbcPaddingOracleGuess(cipherblock, guess, byte, currentPlaintext):
 
 def set3challenge17():
 	ciphertext = challenge17_produceCiphertext()
-	# Let's decrypt this sucker	
+	# Let's decrypt this sucker
 	plaintext = ""
 	ctxtBlocks = splitIntoBlocks(ciphertext.encode('hex'), 32)
 	#print ctxtBlocks
@@ -118,13 +118,13 @@ def set3challenge17():
 			if (lastByte and not guessedLastByte):
 				decryptedBlock = chr(1)+decryptedBlock
 
-			
+
 		#print decryptedBlock
 		plaintext = plaintext + decryptedBlock
-			
+
 	print removePkcs7Padding(plaintext, 16)
 	#challenge17_consumeCiphertext(ciphertext)
-	
+
 #set3challenge17()
 
 
@@ -141,7 +141,7 @@ def aes_128_ctr(plaintext, key, nonce):
 		cipherblock = cipherblock[:len(blocks[i])]
 		ciphertext = ciphertext + hexxor(cipherblock.encode('hex'), blocks[i].encode('hex'))
 	return ciphertext.decode('hex')
-		
+
 def set3challenge18():
 	ciphertext = base64.b64decode("L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ==")
 	key="YELLOW SUBMARINE"
@@ -150,15 +150,85 @@ def set3challenge18():
 
 #set3challenge18()
 
+# Check if all letters at the given index are printable
+# list: list of all encrypted texts
+# index: the index into each line
+# letter: guess for that letter in list[guessindex]
+# Go through each line in list:
+	#xor the list[i][index] with list[guessindex][index] and letter
+	# see if the resulting letter is printable
+	# return false if not printable
+# return true if all are printable
+# need to adjust it so that it is ranked
+def allPrintable(list, index, letter, guessindex):
+	#print index
+	#print guessindex
+	#print len(list[guessindex])
+	for line in list:
+		p = ord(line[index])^ord(list[guessindex][index])^ord(letter)
+		if not chr(p) in string.printable:
+			return False
+	return True
+
+def set3challenge1920helper(filename):
+	i=0
+	data = [aes_128_ctr(base64.b64decode(line.rstrip('\n')), consistent_key, pack('<q', 0)) for line in open(filename, 'r')]
+
+	#print len(data)
+	longestline = -1
+	longestlineIndex = -1
+	shortestline = 10000000000
+	shortestlineindex = -1
+	for i, line in enumerate(data):
+		#print line.encode('hex')
+		if len(line) > longestline:
+			longestline = len(line)
+			longestlineIndex = i
+		if len(line) < shortestline:
+			shortestline = len(line)
+			shortestlineindex = i
+
+	print "Longest line is ", longestlineIndex, " with length ", longestline
+	print "Shortest line is ", shortestlineindex, " with length ", shortestline
+
+	possibleLetters=[]
+
+	for i in range(shortestline):
+		guesses=[]
+		for c in string.printable:
+			if (allPrintable(data, i, c, longestlineIndex)):
+				guesses.append(c)
+		possibleLetters.append(guesses)
+
+	#for possible in possibleLetters:
+		#print len(possible)
+		#print possible
+	#print len(possibleLetters)
+	#print len(string.printable)
+	# Guess it letter by letter, find all letters for the longest string that results in english letters for each other string at the same position
+	# Guess in [a-zA-Z ',]   for first letter
+
+	# Truncate the lines to the shortest length
+	for i,line in enumerate(data):
+		data[i] = data[i][:shortestline]
+
+	combined = "".join(data)
+	results = bestVigenereDecrypt(combined, shortestline, True)
+	n=shortestline
+	plaintext = [results[0][i:i+n] for i in range(0, len(results[0]), n)]
+	print "\n".join(plaintext)
+
 def set3challenge19():
-	
+	set3challenge1920helper('set3.challenge19.txt')
 
 set3challenge19()
 
+def set3challenge20():
+	set3challenge1920helper('set3.challenge20.txt')
 
+set3challenge20()
 
-
-
-
-
-
+# I'll be honest here and say that I didn't do the substitutions thing completely and I don't really care
+# The problem statement said that it is a subpar method and I agree, and it seemed like a big pain. Granted this
+# way doesn't get the entire plaintext, but it gets enough that you get the idea. I don't want this to slow
+# me down though and so I am going to just move on.

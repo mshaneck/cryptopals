@@ -9,7 +9,7 @@ from Crypto.Cipher import AES
 #Set 1, Challenge 1
 def convertHexToBase64(hexString):
     byteString=hexString.decode('hex')
-    return base64.b64encode(byteString)    
+    return base64.b64encode(byteString)
 #print convertHexToBase64("49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d")
 #print convertHexToBase64("0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f")
 #exit()
@@ -29,7 +29,7 @@ def set1challenge3():
     print plaintext
 
 def bestDecryption(ciphertext):
-    ciphertextlen = len(ciphertext)/2 
+    ciphertextlen = len(ciphertext)/2
     #print ciphertextlen
     bestKey=-1
     maxScore=-1
@@ -64,9 +64,9 @@ def englishScore(hexStr):
         letterCount=0
         for c in hexStr:
             if c.isalpha() or c==" " or c=="'" or c=="." or c=="," or c=="?" or c=="!":
-                letterCount=letterCount+1
+                letterCount=letterCount+2
             if c.upper() in "ETAOIN SHRDLU":
-                letterCount=letterCount+1
+                letterCount=letterCount+3
         #print letterCount, len(hexStr)
         baseScore = float(letterCount)/len(hexStr)
         #words=hexStr.split(" ")
@@ -114,7 +114,7 @@ def vigenereCrypt(plain, key):
 
     #Then hexxor
     return hexxor(hexPlain, xorkey)
-    
+
 def set1challenge5():
     plaintext="""Burning 'em, if you ain't quick and nimble
 I go crazy when I hear a cymbal"""
@@ -137,6 +137,7 @@ def hammingDistance(string1, string2):
 def getNAvgHammingDistances(data, maxKeyLength):
     avgHDs = []
     datalen=len(data)
+
     for keysize in range(2, maxKeyLength):
         #Take as many hamming distances as possible
         hd=0
@@ -162,32 +163,28 @@ def getNAvgHammingDistances(data, maxKeyLength):
     #print avgHDs
     return avgHDs
 
-def set1challenge6():
-    with open('set1.challenge6.txt', 'r') as myfile:
-            data=myfile.read().replace('\n', '')
-    data= base64.b64decode(data)
-    #print data.encode('hex')
-    #print len(data)
-    #print hammingDistance("this is a test", "wokka wokka!!!")
-    maxKeySize=42
 
-    hds = getNAvgHammingDistances(data, maxKeySize)
-    #print "Best keysize and distance: ", hds[0][1], hds[0][0]
-    #print "Second best keysize and distance: ", hds[1][1], hds[1][0]
-    #split the data into chunks of size bestKeySize
+def bestVigenereDecrypt(data, maxKeySize, exactKeySize):
+    if (not exactKeySize):
+        hds = getNAvgHammingDistances(data, maxKeySize)
+        #print "Best keysize and distance: ", hds[0][1], hds[0][0]
+        #print "Second best keysize and distance: ", hds[1][1], hds[1][0]
+        #split the data into chunks of size bestKeySize
 
-    # Algorithm idea from https://trustedsignal.blogspot.com/2015/06/xord-play-normalized-hamming-distance.html
-    gcd12=gcd(hds[0][1], hds[1][1])
-    gcd13=gcd(hds[0][1], hds[2][1])
-    gcd23=gcd(hds[1][1], hds[2][1])
-    bestKeySize=-1
-    if (gcd12 != 1):
-        # This next one could possibly be improved to search a configurable top n
-        if (gcd12 == hds[0][1] or gcd12 == hds[1][1] or gcd12 == hds[2][1] or gcd12 == hds[3][1]):
-            if (gcd12==gcd13 and gcd12==23) or (gcd12 == hds[0][1] or gcd12==[1][1]):
-                bestKeySize=gcd12
-    if (bestKeySize == -1):
-        bestKeySize=hds[0][1]
+        # Algorithm idea from https://trustedsignal.blogspot.com/2015/06/xord-play-normalized-hamming-distance.html
+        gcd12=gcd(hds[0][1], hds[1][1])
+        gcd13=gcd(hds[0][1], hds[2][1])
+        gcd23=gcd(hds[1][1], hds[2][1])
+        bestKeySize=-1
+        #if (gcd12 != 1):
+            # This next one could possibly be improved to search a configurable top n
+            #    if (gcd12 == hds[0][1] or gcd12 == hds[1][1] or gcd12 == hds[2][1] or gcd12 == hds[3][1]):
+            #        if (gcd12==gcd13 and gcd12==gcd23) or (gcd12 == hds[0][1] or gcd12==[1][1]):
+            #            bestKeySize=gcd12
+        if (bestKeySize == -1):
+            bestKeySize=hds[0][1]
+    else:
+        bestKeySize = maxKeySize
 
     lines=[data[i:i+bestKeySize] for i in range(0, len(data), bestKeySize)]
     rearrangedLines=""
@@ -198,7 +195,7 @@ def set1challenge6():
                 rearrangedLines+=line[i]
             except IndexError:
                 continue
-      
+
     vigenereLines=[rearrangedLines[i:i+len(lines)] for i in range(0,len(data), len(lines))]
     #print vigenereLines
     i=0
@@ -216,9 +213,19 @@ def set1challenge6():
     #print maybePlain
     score =englishScore(maybePlain)
     #print score
-    print maybePlain
-    print vigenereKeys.decode('hex')
-    
+    return [maybePlain, vigenereKeys.decode('hex')]
+
+def set1challenge6():
+    with open('set1.challenge6.txt', 'r') as myfile:
+            data=myfile.read().replace('\n', '')
+    data= base64.b64decode(data)
+    #print data.encode('hex')
+    #print len(data)
+    #print hammingDistance("this is a test", "wokka wokka!!!")
+    maxKeySize=42
+    results=bestVigenereDecrypt(data, maxKeySize, False)
+    print results[0]
+    print results[1]
 
 #set1challenge6()
 
@@ -278,4 +285,4 @@ def set1challenge8():
 
 
 
-#set1challenge8()    
+#set1challenge8()
