@@ -7,7 +7,7 @@ from Crypto.Cipher import AES
 from Crypto.Random import random
 import base64
 import string
-
+import time
 
 consistent_key = getRandomAESKey()
 random_string = getRandomString()
@@ -221,14 +221,91 @@ def set3challenge1920helper(filename):
 def set3challenge19():
 	set3challenge1920helper('set3.challenge19.txt')
 
-set3challenge19()
+#set3challenge19()
 
 def set3challenge20():
 	set3challenge1920helper('set3.challenge20.txt')
 
-set3challenge20()
+#set3challenge20()
 
 # I'll be honest here and say that I didn't do the substitutions thing completely and I don't really care
 # The problem statement said that it is a subpar method and I agree, and it seemed like a big pain. Granted this
 # way doesn't get the entire plaintext, but it gets enough that you get the idea. I don't want this to slow
 # me down though and so I am going to just move on.
+
+
+
+# Anyway, back to the Crypto
+# The following I got from Wikipedia:
+def _int32(x):
+    # Get the 32 least significant bits.
+    return int(0xFFFFFFFF & x)
+
+class MT19937:
+    def __init__(self, seed):
+        # Initialize the index to 0
+        self.index = 624
+        self.mt = [0] * 624
+        self.mt[0] = seed  # Initialize the initial state to the seed
+        for i in range(1, 624):
+            self.mt[i] = _int32(
+                1812433253 * (self.mt[i - 1] ^ self.mt[i - 1] >> 30) + i)
+
+    def extract_number(self):
+        if self.index >= 624:
+            self.twist()
+
+        y = self.mt[self.index]
+
+        # Right shift by 11 bits
+        y = y ^ y >> 11
+        # Shift y left by 7 and take the bitwise and of 2636928640
+        y = y ^ y << 7 & 2636928640
+        # Shift y left by 15 and take the bitwise and of y and 4022730752
+        y = y ^ y << 15 & 4022730752
+        # Right shift by 18 bits
+        y = y ^ y >> 18
+
+        self.index = self.index + 1
+
+        return _int32(y)
+
+    def twist(self):
+        for i in range(624):
+            # Get the most significant bit and add it to the less significant
+            # bits of the next number
+            y = _int32((self.mt[i] & 0x80000000) +
+                       (self.mt[(i + 1) % 624] & 0x7fffffff))
+            self.mt[i] = self.mt[(i + 397) % 624] ^ y >> 1
+
+            if y % 2 != 0:
+                self.mt[i] = self.mt[i] ^ 0x9908b0df
+        self.index = 0
+
+def set3challenge21():
+	m = MT19937(10)
+	print m.extract_number()
+	print m.extract_number()
+	print m.extract_number()
+	print m.extract_number()
+
+def set3challenge22():
+	time.sleep(random.randint(40,1000))
+	seed=int(time.time()*1000)
+	print "Seed: " + str(seed)
+	m = MT19937(seed)
+	time.sleep(random.randint(40,1000))
+	randNum = m.extract_number()
+	print randNum
+	current_time = int(time.time()*1000)
+	notFound=True
+	tests=1
+	while(notFound):
+		mt = MT19937(current_time)
+		if (mt.extract_number() == randNum):
+			print "Found the seed: " + str(current_time) + " in " + str(tests) + " tests"
+			exit()
+		current_time = current_time - 1
+		tests = tests + 1
+
+#set3challenge22()
