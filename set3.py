@@ -242,45 +242,45 @@ def _int32(x):
     return int(0xFFFFFFFF & x)
 
 class MT19937:
-    def __init__(self, seed):
-        # Initialize the index to 0
-        self.index = 624
-        self.mt = [0] * 624
-        self.mt[0] = seed  # Initialize the initial state to the seed
-        for i in range(1, 624):
-            self.mt[i] = _int32(
-                1812433253 * (self.mt[i - 1] ^ self.mt[i - 1] >> 30) + i)
+	def __init__(self, seed, cloned=False):
+	    if (cloned):
+		self.index=624
+		self.mt = seed
+            else:
+                self.index = 624
+                self.mt = [0] * 624
+                self.mt[0] = seed  # Initialize the initial state to the seed
+                for i in range(1, 624):
+                    self.mt[i] = _int32(1812433253 * (self.mt[i - 1] ^ self.mt[i - 1] >> 30) + i)
 
-    def extract_number(self):
-        if self.index >= 624:
-            self.twist()
+	def extract_number(self):
+		if self.index >= 624:
+			self.twist()
+    	        y = self.mt[self.index]
+		#print "State: " + str(y)
+	        #
+                # Right shift by 11 bits
+    	        y = y ^ y >> 11
+                # Shift y left by 7 and take the bitwise and of 2636928640
+    	        y = y ^ y << 7 & 2636928640
+                # Shift y left by 15 and take the bitwise and of y and 4022730752
+    	        y = y ^ y << 15 & 4022730752
+                # Right shift by 18 bits
+    	        y = y ^ y >> 18
 
-        y = self.mt[self.index]
+	        self.index = self.index + 1
+	        return _int32(y)
 
-        # Right shift by 11 bits
-        y = y ^ y >> 11
-        # Shift y left by 7 and take the bitwise and of 2636928640
-        y = y ^ y << 7 & 2636928640
-        # Shift y left by 15 and take the bitwise and of y and 4022730752
-        y = y ^ y << 15 & 4022730752
-        # Right shift by 18 bits
-        y = y ^ y >> 18
+	def twist(self):
+        	for i in range(624):
+                # Get the most significant bit and add it to the less significant
+                # bits of the next number
+			y = _int32((self.mt[i] & 0x80000000) + (self.mt[(i + 1) % 624] & 0x7fffffff))
+			self.mt[i] = self.mt[(i + 397) % 624] ^ y >> 1
 
-        self.index = self.index + 1
-
-        return _int32(y)
-
-    def twist(self):
-        for i in range(624):
-            # Get the most significant bit and add it to the less significant
-            # bits of the next number
-            y = _int32((self.mt[i] & 0x80000000) +
-                       (self.mt[(i + 1) % 624] & 0x7fffffff))
-            self.mt[i] = self.mt[(i + 397) % 624] ^ y >> 1
-
-            if y % 2 != 0:
-                self.mt[i] = self.mt[i] ^ 0x9908b0df
-        self.index = 0
+			if y % 2 != 0:
+				self.mt[i] = self.mt[i] ^ 0x9908b0df
+		self.index = 0
 
 def set3challenge21():
 	m = MT19937(10)
@@ -309,3 +309,122 @@ def set3challenge22():
 		tests = tests + 1
 
 #set3challenge22()
+
+def untemper(y):
+# Bitwise precedence order
+#<<, >>	Bitwise shifts
+#&	Bitwise AND
+#^	Bitwise XOR
+#|	Bitwise OR
+	magic1=2636928640
+	magic2=4022730752
+
+	#print "{0:0{1}b}".format(y,32) + " ("+str(y)+") orig\n\n"
+	#print "{0:0{1}b}".format(y>>11,32) + " ("+str(y>>11)+")"
+
+	# Step 1
+	# Right shift by 11 bits
+	#y = y ^ (y >> 11)
+	#print "x"*(39-21)+"."*7+"o"*7+"_"*7
+	#print "{0:0{1}b}".format(y,39)+ " ("+str(y)+")  y step 1"
+	#print "{0:0{1}b}".format(y<<7, 39) + " (y<<7)"
+
+	#Step 2
+	# Shift y left by 7 and take the bitwise and of 2636928640
+	#y = 0xFFFFFFFF & (y ^ ((y << 7) & magic1))
+	#print "{0:0{1}b}".format(magic1, 39) + " (step 2 constant)"
+	#print "{0:0{1}b}".format(y,39)+ " ("+str(y)+") y step 2"
+
+
+
+	#Step 3
+	# Shift y left by 15 and take the bitwise and of y and 4022730752
+	#print "x"*32
+	#print "{0:0{1}b}".format(y,32) + " ("+str(y)+") y before step 3"
+	#y = 0xFFFFFFFF & (y ^ ((y << 15) & magic2))
+	#print "{0:0{1}b}".format(magic2,32) + " ("+str(magic2)+") y step 3"
+	#print "{0:0{1}b}".format(y,32) + " ("+str(y)+") y step 3"
+	#print "x"*17
+
+
+
+	#print "\n\n\n"
+	#Step 4
+	# Right shift by 18 bits
+	#y = y ^ (y >> 18)
+	#print "{0:b}".format(y)
+
+	# Begin untemper
+	#untemper step 4
+	y = (y ^ (y << 18)) >> 18
+	#print "{0:b}".format(y) + " ("+str(y)+")"
+
+	#untemper step 3
+	#Untemper step 3
+	x=0
+	part1 = (y & 0x7FFF) ^ ((y>>15) & magic2 & 0x7FFF)
+	x = x | part1
+	#print "{0:0{1}b}".format(part1,32)+ " part1"
+	part2 = (y & 0x3FFF8000) ^ ((part1<<15) & magic2 & 0x3FFF8000)
+	x = x | part2
+	#print "{0:0{1}b}".format(part2,32)+ " part2"
+	part3 = (y & 0xC0000000) ^ ((part2<<15) & magic2 & 0xC0000000)
+	x = x | part3
+	y=x
+	#print "{0:0{1}b}".format(part3,32)+ " part3"
+	#print "{0:0{1}b}".format(x,32)+ " ("+str(x)+")  x"
+
+	#untemper step 2
+	x=0
+	part1 = (y & 0x07F) ^ ((y>>7) & magic1 & 0x7f)
+	x = x | part1
+	#print "{0:0{1}b}".format(part1,39)+ " part1"
+	part2 = (y & 0x3F80 ^ ((part1<<7) & magic1 & 0x3F80))
+	x = x|part2
+	#print "{0:0{1}b}".format(part2,39)+ " part2\n"
+	part3 = (y & 0x1FC000 ^ ((part2<<7) & magic1 & 0x1FC000))
+	x = x|part3
+	#print "{0:0{1}b}".format(part3,39)+ " part3\n"
+	part4 = (y & 0xFE00000 ^ ((part3<<7) & magic1 & 0xFE00000))
+	x = x|part4
+	#print "{0:0{1}b}".format(part4,39)+ " part4\n"
+	part5 = (y & 0xF0000000 ^ ((part4<<7) & magic1 & 0xF0000000))
+	x = x|part5
+	#print "{0:0{1}b}".format(part5,39)+ " part5\n"
+
+	#print "{0:0{1}b}".format(x,39)+ " ("+str(x)+")  y recovery step 2"
+	#print "x"*(39-21)+"."*7+"o"*7+"_"*7
+	#print "\n\n"
+	y=x
+
+	#untemper step 1
+	x = (y ^ (y << 11)) >> 11
+	#print "{0:0{1}b}".format(x,32) + " ("+str(x)+")x"
+	x = (x & 0xFFFFFC00) | (((x>>11) & 1023) ^ (y & 1023))
+	#print "{0:0{1}b}".format(x,32) + " ("+str(x)+")x2"
+	y=x
+
+	return y
+
+def cloneMT19937():
+	y=random.getrandbits(32)
+	print "Seeding MT19937 with seed " + str(y)
+	m = MT19937(y)
+	clonedState = []
+	for i in range(0,624):
+		clonedState.append(untemper(m.extract_number()))
+	#print clonedState
+	m_cloned=MT19937(clonedState, True)
+
+
+	for i in range(0,100):
+		if (m.extract_number() != m_cloned.extract_number()):
+			print "FAIL"
+			exit()
+	print "SUCCESS!"
+
+
+def set3challenge23():
+	cloneMT19937()
+
+set3challenge23()
