@@ -427,4 +427,35 @@ def cloneMT19937():
 def set3challenge23():
 	cloneMT19937()
 
-set3challenge23()
+#set3challenge23()
+
+
+def MT19937_crypt(plaintext, seed):
+	m = MT19937(seed)
+	keystream=""
+	for i in range(0,len(plaintext)):
+		keystream += chr(m.extract_number() & 0xFF)
+	return hexxor(keystream.encode('hex'), plaintext.encode('hex')).decode('hex')
+
+
+
+def set3challenge24():
+	s=random.getrandbits(16)
+	print s
+	plaintext = ""
+	x = random.randint(1,100)
+	for i in range(0,x):
+		plaintext += chr(random.randint(ord('a'), ord('z')))
+	plaintext += "A"*14
+	ciphertext = MT19937_crypt(plaintext, s)
+
+	# Now find the seed
+	# cycle through all 2^16 possible seeds and decrypt - check if it contains 14 As
+	for i in range(0,2**16):
+		test = MT19937_crypt(ciphertext, i)
+		if "A"*14 in test:
+			print "Found the seed: " + str(i)
+			exit()
+
+
+set3challenge24()
