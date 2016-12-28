@@ -458,4 +458,4 @@ def set3challenge24():
 			exit()
 
 
-set3challenge24()
+#set3challenge24()
