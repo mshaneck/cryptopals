@@ -2,8 +2,9 @@
 from Crypto.Cipher import AES
 from Crypto.Random import random
 from set1 import hexxor, isECB
-import base64 
+import base64
 import string
+from struct import *
 
 ENCRYPT="e"
 DECRYPT="d"
@@ -85,7 +86,7 @@ def aes_128_cbc(input, key, iv, mode):
     for block in input:
         #print "------------------------"
         nextBlock=""
-        
+
         if (mode == ENCRYPT):
             nextBlock = aes_128_ecb(hexxor(iv.encode('hex'), block.encode('hex')).decode('hex'), key, ENCRYPT)
             iv=nextBlock
@@ -111,21 +112,21 @@ def set2challenge10():
     print decrypted
 
 #set2challenge10()
-    
+
 def getRandomAESKey():
     return "{0:0{1}x}".format(random.getrandbits(128), 32).decode('hex')
-    
+
 def encryptWithRandomKey(plaintext):
     key = getRandomAESKey()
-    
+
     prependlen = random.randint(5,10)
     postpendlen = random.randint(5,10)
     prepend = "{0:0{1}x}".format(random.getrandbits(prependlen*8), prependlen*2).decode('hex')
     postpend = "{0:0{1}x}".format(random.getrandbits(postpendlen*8), postpendlen*2).decode('hex')
-    
+
     mode = random.randint(0,1)
     plaintext = pkcs7Padding(prepend+plaintext+postpend, AES.block_size)
-    
+
     if (mode==0):
         #print "ECB"
         return aes_128_ecb(plaintext, key, ENCRYPT)
@@ -138,10 +139,11 @@ def set2challenge11():
     ciphertext = encryptWithRandomKey("A"*256)
     #print ciphertext.encode('hex')
     print isECB(ciphertext)
-    
-    
+
+
 #set2challenge11()
 
+consistent_nonce=pack('<q', 0)
 consistent_key = getRandomAESKey()
 random_string = getRandomString()
 # Just for debugging purposes
@@ -175,13 +177,13 @@ def set2challenge12():
             blockSize = len(ctxt)-ctxtlen
             #print blockSize
             break
-    
+
     numberOfUnknownBlocks = len(aes_oracle(""))/blockSize
     #print numberOfUnknownBlocks, " total unknown blocks"
 
     # detect that it is using ECB mode
     if (isECB(aes_oracle(A*(2*blockSize)))):
-        usingECB=True   
+        usingECB=True
     else:
         print "Not using ECB"
         return
@@ -193,13 +195,13 @@ def set2challenge12():
     # Decrypt each block, one at a time
     for j in range(numberOfUnknownBlocks):
         # j is the block I need to keep
-        # Decrypt the block iteratively, since you can 
+        # Decrypt the block iteratively, since you can
         for i in range(blockSize):
             addToDecryptionDictionary(A*(blockSize-i-1)+decryptedMessage, crack, j, blockSize)
             block = getHexBlock(aes_oracle(A*(blockSize-i-1)), j, blockSize)
 
             # at the very end, after the last byte,
-            # the padding changes since the size of the message is changing 
+            # the padding changes since the size of the message is changing
             # So you cannot break that final byte
             # so if the block that you obtain is not in the dictionary
             # then you are done and can stop
@@ -286,12 +288,12 @@ def set2challenge14():
     # detect that it is using ECB mode
     # Need to use 3 blocks of A since we don't know how long the prefix string is
     if (isECB(aes_oracle(A*(3*blockSize)))):
-        usingECB=True   
+        usingECB=True
         #print "Using ECB"
     else:
         print "Not using ECB"
         return
-    
+
     blocks = splitIntoBlocks(aes_oracle(A*(3*blockSize)).encode('hex'), blockSize*2)
     #print blocks;
     # Find the blocks that match our input
@@ -335,13 +337,13 @@ def set2challenge14():
     # Added one to the numberof unknown blocks since if the offset is large, it doesn't decrypt the final block
     for j in range(numberOfUnknownBlocks+1):
         # j is the block I need to keep
-        # Decrypt the block iteratively, since you can 
+        # Decrypt the block iteratively, since you can
         for i in range(blockSize):
             addToDecryptionDictionary(A*offset + A*(blockSize-i-1)+decryptedMessage, crack, j+x, blockSize)
             block = getHexBlock(aes_oracle(A*offset + A*(blockSize-i-1)), j+x, blockSize)
 
             # at the very end, after the last byte,
-            # the padding changes since the size of the message is changing 
+            # the padding changes since the size of the message is changing
             # So you cannot break that final byte
             # so if the block that you obtain is not in the dictionary
             # then you are done and can stop
@@ -410,4 +412,3 @@ def set2challenge16():
 
 
 #set2challenge16()
-
