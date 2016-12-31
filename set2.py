@@ -75,6 +75,7 @@ def aes_128_ecb(input, key, mode):
 def aes_128_cbc(input, key, iv, mode):
     #Process the data into blocks
     input = splitIntoBlocks(input, AES.block_size)
+    #print len(input)
     output=""
     if (mode ==DECRYPT):
         iv=input[0]
