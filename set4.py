@@ -7,6 +7,96 @@ from set3 import *
 import struct
 import io
 
+def leftrotate(i, n):
+    return ((i << n) & 0xffffffff) | (i >> (32 - n))
+
+def F(x,y,z):
+    return (x & y) | (~x & z)
+
+def G(x,y,z):
+    return (x & y) | (x & z) | (y & z)
+
+def H(x,y,z):
+    return x ^ y ^ z
+
+class MD4(object):
+    def __init__(self, data=""):
+        self.remainder = data
+        self.count = 0
+        self.h = [
+                0x67452301,
+                0xefcdab89,
+                0x98badcfe,
+                0x10325476
+                ]
+        #print "Initial State: " + str(self.h)
+
+    def setInternalState(self,hstate, chunks):
+        self.h[0]=hstate[0]
+        self.h[1]=hstate[1]
+        self.h[2]=hstate[2]
+        self.h[3]=hstate[3]
+        self.count = chunks
+        #print "State initialized to: " + str(self.h)
+        #print "Message length set to " + str(chunks)
+
+    def _add_chunk(self, chunk):
+        self.count += 1
+        #print "New chunk count = " + str(self.count)
+        #print "Adding chunk: " + chunk
+        X = list( struct.unpack("<16I", chunk) + (None,) * (80-16) )
+        h = [x for x in self.h]
+        # Round 1
+        s = (3,7,11,19)
+        for r in xrange(16):
+            i = (16-r)%4
+            k = r
+            h[i] = leftrotate( (h[i] + F(h[(i+1)%4], h[(i+2)%4], h[(i+3)%4]) + X[k]) % 2**32, s[r%4] )
+        # Round 2
+        s = (3,5,9,13)
+        for r in xrange(16):
+            i = (16-r)%4
+            k = 4*(r%4) + r//4
+            h[i] = leftrotate( (h[i] + G(h[(i+1)%4], h[(i+2)%4], h[(i+3)%4]) + X[k] + 0x5a827999) % 2**32, s[r%4] )
+        # Round 3
+        s = (3,9,11,15)
+        k = (0,8,4,12,2,10,6,14,1,9,5,13,3,11,7,15) #wish I could function
+        for r in xrange(16):
+            i = (16-r)%4
+            h[i] = leftrotate( (h[i] + H(h[(i+1)%4], h[(i+2)%4], h[(i+3)%4]) + X[k[r]] + 0x6ed9eba1) % 2**32, s[r%4] )
+
+        for i,v in enumerate(h):
+            self.h[i] = (v + self.h[i]) % 2**32
+
+        #print "New state: " + str(self.h)
+
+    def add(self, data):
+        #print "Adding data: " + data.encode("hex")
+        message = self.remainder + data
+        r = len(message) % 64
+        if r != 0:
+            self.remainder = message[-r:]
+        else:
+            self.remainder = ""
+        for chunk in xrange(0, len(message)-r, 64):
+            self._add_chunk( message[chunk:chunk+64] )
+        return self
+
+    def finish(self):
+        l = len(self.remainder) + 64 * self.count
+        #print "Length before padding: " + str(l)
+        padding = "\x80" + "\x00" * ((55 - l) % 64) + struct.pack("<Q", l * 8)
+        #print "Computed padding: " + padding.encode("hex")
+        #print len(padding)
+        self.add( padding)
+        out = struct.pack("<4I", *self.h)
+        #print "Final State: " + str(self.h[0]) + ", " + str(self.h[1]) + ", " + str(self.h[2]) + ", " + str(self.h[3])
+        #print "Final state: " + "{0:0{1}x}".format(self.h[0],8) + ", " + "{0:0{1}x}".format(self.h[1],8) + ", "  + "{0:0{1}x}".format(self.h[2],8) + ", "  + "{0:0{1}x}".format(self.h[3],8)
+
+        self.__init__()
+        return out.encode("hex")
+
+
 try:
     range = xrange
 except NameError:
@@ -341,5 +431,72 @@ def set4challenge28():
             exit()
     print "Did not forge the message... :("
 
+# This really should be challenge 29, but i don't care that much...
+#set4challenge28()
 
-set4challenge28()
+
+def md4Mac(key, message):
+    m=MD4()
+    m.add(key+message)
+    return m.finish()
+
+def getGluePaddingMD4(length):
+
+    padding = "\x80" + "\x00" * ((55 - length) % 64) + struct.pack("<Q", length * 8)
+    #print "Glue padding:     " + padding.encode("hex")
+    #print len(padding)
+    return padding
+
+def verifyMD4Mac(msg, key, tag):
+    checkTag = md4Mac(key, msg)
+    return (tag == checkTag)
+
+def set4challenge30():
+    #m = MD4()
+    #m.add("hello")
+    #h = m.finish()
+    #print h
+    #hstate=struct.unpack("<4I", h.decode("hex"))
+    #print hstate
+
+    macKey = random.choice(open("/usr/share/dict/words").readlines()).rstrip()
+    print "Key is " + macKey
+
+    msg = "comment1=cooking MCs;userdata=foo;comment2= like a pound of bacon"
+    hashMac = md4Mac(macKey, msg)
+    #print "HashMac of original: " + hashMac
+    #print "Verifying mac on original:"
+    res = verifyMD4Mac(msg, macKey, hashMac)
+    if (not res):
+        print "WHAT??"
+        exit()
+    print "Verified normally"
+    #exit()
+
+    hstate=struct.unpack("<4I", hashMac.decode("hex"))
+
+    additionalMsg = "comment3=yetsomemorecomments;admin=true"
+    #print "Additional message length="+str(len(additionalMsg))
+    longestKeyLen=32
+    originalMsgLen=len(msg)
+    for i in range(1,longestKeyLen):
+    #for i in range(len(macKey), len(macKey)+1):
+        #print "\n\nGuessing " + str(i)
+        #print "Original Msg Len plus key length:" + str(originalMsgLen+i)
+        padding = getGluePaddingMD4(originalMsgLen+i)
+        #print padding.encode("hex")
+        #print len(padding)
+        forge = MD4()
+        forge.setInternalState(hstate, (originalMsgLen+i+len(padding))/64)
+        forge.add(additionalMsg)
+        tag = forge.finish()
+
+        print "We got                 " + tag
+        print "We should have gotten: " + md4Mac(macKey, msg+padding+additionalMsg)
+        if(verifyMD4Mac(msg+padding+additionalMsg, macKey, tag)):
+            print "We win! Key length is " + str(i)
+            print "Forged Mac for "+msg+padding+additionalMsg
+            exit()
+    print "Did not forge the message... :("
+
+set4challenge30()
