@@ -457,5 +457,9 @@ def set3challenge24():
 			print "Found the seed: " + str(i)
 			exit()
 
+#TODO: Finish challenge 24 - I forgot to include the bit of including the detection of random password reset token based on current time
+
+
+
 
 #set3challenge24()
