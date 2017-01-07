@@ -35,7 +35,7 @@ def insecure_compare(str1, str2):
     for i in range(0,length):
         if (str1[i] != str2[i]):
             return False
-        time.sleep(0.05) # Sleep for 50 ms
+        time.sleep(0.005) # Sleep for 50 ms
     # It's not right if the lengths are different
     if (len(str1) != len(str2)):
         return False

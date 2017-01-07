@@ -281,6 +281,61 @@ def set4challenge31():
     except requests.ConnectionError:
         print("failed to connect")
 
+#set4challenge31()
 
+def set4challenge32():
+    # going to use set4.hmacfile
+    testsig=""#"d8fd65a24f8132956c4aaa5f866022e7ab710ec5"
 
-set4challenge31()
+    # print "Testing python stuff"
+    # x = int("a", 16)
+    # y = int("0", 16)
+    # z = int("5", 16)
+    # print x, y, z
+    # print "{0:0{1}x}".format(x, 1)
+    # print "{0:0{1}x}".format(y, 1)
+    # print "{0:0{1}x}".format(z, 1)
+    # exit()
+
+    #HMAC length is 40 bytes in 0-9a-f
+    macLength=40
+    macCharacters = "abcdef0123456789"
+    numberOfRuns = 20
+    try:
+        for i in range(0,macLength):
+            results=[0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0]
+            #Simple time comparison is not enough now. We need to take several runs and use the one that is longest the most
+            for k in range(0,numberOfRuns):
+                maxRespTime = 0.0
+                maxRespTimeCharacter = ""
+                for j in macCharacters:
+                    #Look for the longest response time, that;s probably the correct character
+                    start = timer()
+                    r = requests.head("http://localhost:8080/test?file=set4.hmacfile&signature="+testsig+j)
+                    end = timer()
+                    respTime = (end - start)
+                    if (respTime>maxRespTime):
+                        maxRespTime = respTime
+                        maxRespTimeCharacter = j
+                results[int(maxRespTimeCharacter,16)] = results[int(maxRespTimeCharacter,16)]+1
+            # Now scan through the results array and find the one with the largest value
+            largestValue = 0
+            largestIndex = -1
+            for i,j in enumerate(results):
+                if (results[i] > largestValue):
+                    largestValue = results[i]
+                    largestIndex = i
+            testsig = testsig + "{0:0{1}x}".format(largestIndex, 1)
+        # At this point, we shoud have built up the signature.
+        # Let's try it
+        print "Trying: " + testsig
+        r=requests.head("http://localhost:8080/test?file=set4.hmacfile&signature="+testsig)
+        if(r.status_code == 200):
+            print "Success!"
+        else:
+            print "Fail!"
+        # prints the int of the status code. Find more at httpstatusrappers.com :)
+    except requests.ConnectionError:
+        print("failed to connect")
+
+set4challenge32()
