@@ -338,4 +338,4 @@ def set4challenge32():
     except requests.ConnectionError:
         print("failed to connect")
 
-set4challenge32()
+#set4challenge32()
