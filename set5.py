@@ -147,3 +147,14 @@ def set5challenge35():
 
 
 #set5challenge35()
+
+def set5challenge36():
+    print "Run Server with ./SRPServer.py --port 6000"
+    print "Run Client with ./SRPClient.py --port 6000"
+
+def set5challenge37():
+    print "Run Server with ./SRPServer.py --port 6000"
+    print "Run Client with ./SRPClient.py --port 6000 -z"
+
+#set5challenge36()
+#set5challenge37()

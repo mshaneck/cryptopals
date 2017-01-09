@@ -13,7 +13,7 @@ I="shaneck@gmail.com"
 P="fiddlesticks"
 
 
-def SRPClient(conn):
+def SRPClient(conn, useZeroKey):
     print "Initiating SRP Protocol"
 
     #Send I, A=g**a % N (a la Diffie Hellman)
@@ -21,6 +21,8 @@ def SRPClient(conn):
     conn.send(I)
     a = random.randint(2,N)
     A = pow(g,a,N)
+    if (useZeroKey):
+        A=0 # Or N or N*N, etc.
     print "Sending A"
     print str(A)
     conn.send(str(A))
@@ -43,6 +45,8 @@ def SRPClient(conn):
     x = int(hashlib.sha256(str(salt)+P).hexdigest(), 16)
     # S = (B - k * g**x)**(a + u * x) % N
     S = pow(B - (k*pow(g,x,N)),a+(u*x),N)
+    if (useZeroKey):
+        S=0
     # K = SHA256(S)
     K = int(hashlib.sha256(str(S)).hexdigest(), 16)
     print "S Client:"
@@ -65,16 +69,21 @@ def SRPClient(conn):
 
 def main(argv):
     port=63079
+    useZeroKey = False
     try:
-        opts, args = getopt.getopt(argv,"p:",["port="])
+        opts, args = getopt.getopt(argv,"p:z",["port=", "zero"])
     except getopt.GetoptError:
         print 'SRPClient.py -p <listen port> '
         sys.exit(2)
     for opt, arg in opts:
         if opt in ("-p", "--port"):
             port = int(arg)
+        if opt in ("-z", "--zero"):
+            useZeroKey = True
 
     print "Connecting to port " + str(port)
+    if (useZeroKey):
+        print "Using Zero Key"
     # Create a TCP/IP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -88,7 +97,7 @@ def main(argv):
         print >>sys.stderr, "Could not connect to the server"
         exit(1)
 
-    SRPClient(sock)
+    SRPClient(sock, useZeroKey)
     sock.close()
     exit(0)
 
