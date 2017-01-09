@@ -2,6 +2,7 @@
 import struct
 import io
 from set1 import *
+import hashlib
 
 def leftrotate(i, n):
     return ((i << n) & 0xffffffff) | (i >> (32 - n))
@@ -280,6 +281,31 @@ def hmac_sha1(key, message):
     #print o_key_pad
 
     return sha1(o_key_pad + sha1(i_key_pad + message).decode("hex"))
+
+def hmac_sha256(key, message):
+    blocksize = 64 # Block size of SHA256 in bytes
+    if (len(key) > blocksize):
+        key = sha1(key) # keys longer than blocksize are shortened
+    if (len(key) < blocksize):
+        # keys shorter than blocksize are zero-padded
+        key = key + '\x00'*(blocksize-len(key))
+
+    #print key.encode("hex")
+    #print ("\x36"*blocksize).encode("hex")
+    #print ("\x5c"*blocksize).encode("hex")
+    #print len(key)
+    o_key_pad = hexxor(('\x5c' * blocksize).encode("hex"), key.encode("hex")).decode("hex") # Where blocksize is that of the underlying hash function
+    i_key_pad = hexxor(('\x36' * blocksize).encode("hex"), key.encode("hex")).decode("hex")
+    #print o_key_pad
+
+    return hashlib.sha256(o_key_pad + hashlib.sha256(i_key_pad + message).digest()).hexdigest()
+
+
+
+def verifySHA256Mac(msg, key, tag):
+    checkTag = hmac_sha256(key, msg)
+    return (tag == checkTag)
+
 
 #HMAC_SHA1("", "")   = 0xfbdb1d1b18aa6c08324b7d64b71fb76370690e1d
 #HMAC_SHA1("key", "The quick brown fox jumps over the lazy dog")   = 0xde7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9
