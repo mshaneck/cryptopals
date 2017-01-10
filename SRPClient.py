@@ -13,9 +13,9 @@ I="shaneck@gmail.com"
 P="fiddlesticks"
 
 
-def SRPClient(conn, useZeroKey):
+def SRPClient(conn, password, useZeroKey, simpleSRP):
     print "Initiating SRP Protocol"
-
+    P = password
     #Send I, A=g**a % N (a la Diffie Hellman)
     # C -> S: I, A
     conn.send(I)
@@ -35,16 +35,24 @@ def SRPClient(conn, useZeroKey):
     print "B:"
     print B
 
-    # S,C compute u= SHA256(A|B)
-    u=int(hashlib.sha256(str(A)+str(B)).hexdigest(), 16)
-    print "U:"
-    print u
+    if (simpleSRP):
+        u = int(conn.recv(BUFFER_SIZE))
+        print "Received U:"
+        print u
+    else:
+        # S,C compute u= SHA256(A|B)
+        u=int(hashlib.sha256(str(A)+str(B)).hexdigest(), 16)
+        print "U:"
+        print u
 
     # C compute K
     #xH=SHA256(salt|password)
     x = int(hashlib.sha256(str(salt)+P).hexdigest(), 16)
     # S = (B - k * g**x)**(a + u * x) % N
     S = pow(B - (k*pow(g,x,N)),a+(u*x),N)
+    if (simpleSRP):
+        #S = B**(a + ux) % n
+        S = pow(B,a+(u*x),N)
     if (useZeroKey):
         S=0
     # K = SHA256(S)
@@ -70,8 +78,10 @@ def SRPClient(conn, useZeroKey):
 def main(argv):
     port=63079
     useZeroKey = False
+    simpleSRP = False
+    password = "fiddlesticks"
     try:
-        opts, args = getopt.getopt(argv,"p:z",["port=", "zero"])
+        opts, args = getopt.getopt(argv,"p:zsk:",["port=", "zero", "simple", "password="])
     except getopt.GetoptError:
         print 'SRPClient.py -p <listen port> '
         sys.exit(2)
@@ -80,6 +90,10 @@ def main(argv):
             port = int(arg)
         if opt in ("-z", "--zero"):
             useZeroKey = True
+        if opt in ("-s", "--simple"):
+            simpleSRP = True
+        if opt in ("-k", "--password"):
+            password = arg
 
     print "Connecting to port " + str(port)
     if (useZeroKey):
@@ -97,7 +111,7 @@ def main(argv):
         print >>sys.stderr, "Could not connect to the server"
         exit(1)
 
-    SRPClient(sock, useZeroKey)
+    SRPClient(sock, password, useZeroKey, simpleSRP)
     sock.close()
     exit(0)
 

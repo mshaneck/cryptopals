@@ -14,9 +14,9 @@ k=3
 I="shaneck@gmail.com"
 P="fiddlesticks"
 
-def SRPServer(conn):
+def SRPServer(conn, password, simpleSRP):
     print "Initiating SRP Protocol"
-
+    P=password
     # Initialize. This would normally be done ahead of time
     salt=random.getrandbits(32)
     x = int(hashlib.sha256(str(salt)+P).hexdigest(), 16)
@@ -38,14 +38,21 @@ def SRPServer(conn):
     conn.send(str(salt))
     b = random.randint(2,N)
     B = k*v + pow(g,b,N)
+    if (simpleSRP):
+        B = pow(g,b,N)
     print "Sending B:"
     print B
     conn.send(str(B))
-
-    # S,C compute u= SHA256(A|B)
-    u=int(hashlib.sha256(str(A)+str(B)).hexdigest(), 16)
-    print "U:"
-    print u
+    if (simpleSRP):
+        u = random.getrandbits(128)
+        print "Sending Random U: "
+        print str(u)
+        conn.send(str(u))
+    else:
+        # S,C compute u= SHA256(A|B)
+        u=int(hashlib.sha256(str(A)+str(B)).hexdigest(), 16)
+        print "U:"
+        print u
 
     # S compute K
     #S = (A * v**u) ** b % N
@@ -69,16 +76,21 @@ def SRPServer(conn):
 
 def main(argv):
     port=63079
+    simpleSRP = False
     try:
-        opts, args = getopt.getopt(argv,"p:",["port="])
+        opts, args = getopt.getopt(argv,"p:s",["port=", "simple"])
     except getopt.GetoptError:
         print 'SRPServer.py -p <listen port> '
         sys.exit(2)
     for opt, arg in opts:
         if opt in ("-p", "--port"):
             port = int(arg)
+        if opt in ("-s", "--simple"):
+            simpleSRP = True
 
 
+    password = random.choice(open("/usr/share/dict/words").readlines()).rstrip()
+    print "Using password: " + password
     #create an INET, STREAMing socket
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     #bind the socket to a public host,
@@ -93,7 +105,7 @@ def main(argv):
     (clientsocket, address) = serversocket.accept()
     print "Got a connection!"
 
-    SRPServer(clientsocket)
+    SRPServer(clientsocket, password, simpleSRP)
 
     clientsocket.close()
     serversocket.close()
