@@ -100,6 +100,8 @@ def rsaStringEncrypt(s,e,n):
     #print "Encrypting " + str(m) + "("+s+")"
     if (m>n):
         print "Message is too large"
+    print "M:"
+    print m
     return rsaEncrypt(m,e,n)
 
 def rsaDecrypt(c,d,n):
@@ -110,6 +112,45 @@ def rsaStringDecrypt(c,d,n):
     #print m
     return "{0:x}".format(m).decode("hex")
     #m.decode("hex")
+
+def pairwiseCoprime(m):
+    for i,a in enumerate(m):
+        for j,b in enumerate(m):
+            if (i < j):
+                (gcd,inv) = modInv(a,b)
+                #print "GCD("+str(a)+", "+str(b)+")=" + str(gcd)
+                if (gcd> 1):
+                    return False
+    return True
+
+def crt(a, m, checkCoprime):
+    # a and m should be lists
+    # a contains all coefficients
+    # m contains all pairwise coprime moduli
+    #print m
+    #print a
+    if (checkCoprime):
+        if (not pairwiseCoprime(m)):
+            return False
+
+    M = reduce(lambda x, y: x*y, m)
+    #print "M="+str(M)
+    x = 0
+    #print "Parts:"
+    for i,j in enumerate(m):
+        #print i
+        #print m[i]
+        #print a[i]
+        (gcd,c) = modInv(M/(m[i]), m[i])
+        #print c
+        #print "M/m["+str(i)+"]="+str((M/(m[i])))
+        #print "C="+str(c)
+        #print "A["+ str(i)+"]="+str(a[i])
+        x = x + (M/(m[i]))*(c)*(a[i])
+    #print "Results:"
+    #print x
+    #print M
+    return x%M
 
 def main(argv):
     command=""
@@ -124,8 +165,10 @@ def main(argv):
     plaintext=0
     plainmessage=""
     stringMode = False
+    mlist=[]
+    alist=[]
     try:
-        opts, args = getopt.getopt(argv,"gb:t:ma:b:reds:p:c:",["genprime", "bits=", "tests=", "modinv", "genrsa", "encrypt", "decrypt", "private=", "modulus=", "ciphertext=", "message=", "string", "plaintext="])
+        opts, args = getopt.getopt(argv,"gb:t:ma:b:reds:p:c:",["genprime", "bits=", "tests=", "modinv", "genrsa", "encrypt", "decrypt", "private=", "modulus=", "ciphertext=", "message=", "string", "plaintext=", "crt", "mlist=", "alist="])
     except getopt.GetoptError:
         print 'blerg'
         sys.exit(2)
@@ -133,6 +176,9 @@ def main(argv):
         if opt in ("-g", "--genprime"):
             commands = commands+1
             command = "g"
+        if opt in ("--crt"):
+            commands = commands+1
+            command = "c"
         if opt in ("-b", "--bits"):
             bits = int(arg)
         if opt in ("-t", "--tests"):
@@ -153,6 +199,10 @@ def main(argv):
             stringMode = True
         if opt in ("--message"):
             plainmessage=arg
+        if opt in ("--mlist"):
+            mlist=map(int, arg.split(','))
+        if opt in ("--alist"):
+            alist=map(int, arg.split(','))
         if opt in ("-m", "--modinv"):
             commands = commands+1
             command = "m"
@@ -227,6 +277,13 @@ def main(argv):
             print rsaStringDecrypt(ciphertext, d, n)
         else:
             print rsaDecrypt(ciphertext, d, n)
+
+    if (command =="c"):
+        print "Doing the CRT"
+        print alist
+        print mlist
+        print crt(alist, mlist, False)
+
 
     exit(0)
 
