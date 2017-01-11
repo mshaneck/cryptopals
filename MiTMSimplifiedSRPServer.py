@@ -4,6 +4,8 @@ import sys, getopt, socket
 import hashlib
 from Crypto.Random import random
 from hashing import *
+import gmpy2
+
 
 BUFFER_SIZE = 1024
 
@@ -56,7 +58,8 @@ def MITMSimpleSRPServer(conn):
         if (count % 1000==0):
             print  str(100*count/float(pwdCount)) + '% done, processing ' + pwd
         x = int(hashlib.sha256(str(salt)+pwd).hexdigest(), 16)
-        Bux = pow(B,(u*x),N)
+        #Bux = pow(B,(u*x),N)
+        Bux = long(gmpy2.powmod(B, u*x, N))
         S = (gab*Bux)%N
         K = int(hashlib.sha256(str(S)).hexdigest(), 16)
         if (verifySHA256Mac(str(salt), str(K), M)):
