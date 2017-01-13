@@ -4,6 +4,7 @@ import hashlib, gmpy, gmpy2
 from Crypto.Random import random
 from hashing import *
 from rsa_utils import *
+from dsa import *
 
 def set6challenge41():
     # Connect to the server
@@ -99,4 +100,35 @@ def set6challenge42():
         print "Forgery Failed!"
 
 
-set6challenge42()
+#set6challenge42()
+
+
+def recoverDsaPrivateKey(s,k,message, r, q):
+    #(s*k-h(message))r^-1 mod q
+    rInv = modInv(r,q)[1]
+    h = int(hashlib.sha1(message).hexdigest(),16)
+    return (((s*k) - h)*rInv) % q
+
+def set6challenge43():
+    y = 0x84ad4719d044495496a3201c8ff484feb45b962e7302e56a392aee4abab3e4bdebf2955b4736012f21a08084056b19bcd7fee56048e004e44984e2f411788efdc837a0d2e5abb7b555039fd243ac01f0fb2ed1dec568280ce678e931868d23eb095fde9d3779191b8c0299d6e07bbb283e6633451e535c45513b2d33c99ea17
+    message = "For those that envy a MC it can be hazardous to your health\nSo be friendly, a matter of life and death, just like a etch-a-sketch\n"
+    r = 548099063082341131477253921760299949438196259240
+    s = 857042759984254168557880549501802188789837994940
+    #print "{0:x}".format(q)
+    #print hashlib.sha1(message).hexdigest()
+    for k in range(0,65535):
+        x = recoverDsaPrivateKey(s,k,message, r, q)
+        #ycheck = pow(g,x,p)
+        ycheck = long(gmpy2.powmod(g,x,p))
+        if (ycheck == y):
+            print "Found k:"
+            print "0x" + "{0:x}".format(k)
+            print "Found x:"
+            hexX = "{0:x}".format(x)
+            print "0x" + hexX
+            print hashlib.sha1(hexX).hexdigest()
+
+            exit(0)
+    print "Fail!"
+
+set6challenge43()
