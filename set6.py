@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import sys, getopt, socket
-import hashlib, gmpy2
+import hashlib, gmpy, gmpy2
 from Crypto.Random import random
 from hashing import *
 from rsa_utils import *
@@ -61,4 +61,42 @@ def set6challenge41():
 
     print plaintext
 
-set6challenge41()
+#set6challenge41()
+
+
+def set6challenge42():
+    print "Forge a signature"
+    (e,d,n) = genRsa(1024, 15)
+    #print n
+    #print "{0:x}".format(n)
+    #print len("{0:x}".format(n))
+    #message = "Super Secret Message that I definitely sent"
+    #sign = rsaSign(message, d, n)
+    #print sign
+    #if (rsaVerify(sign,message,e,n, 1024)):
+    #    print "Signature verifies"
+
+    length = 256
+    #print length
+    forgeMessage = "Forged Secret Message that I definitely DID NOT send"
+    forgePrefix = "0001" + "FF"*3 + "00" + "3021300906052b0e03021a05000414"
+    forgeHash = hashlib.sha1(forgeMessage).hexdigest()
+    forgeSuffix = "F"*(length-len(forgePrefix)-len(forgeHash))
+    forgeTarget = int(forgePrefix+forgeHash+forgeSuffix, 16)
+    #print "Forge for:"
+    #print "{0:0{1}x}".format(forgeTarget, length)
+    #print "Integer Cube root:"
+    forgeTarget=gmpy.mpz(forgeTarget)
+    forgeTargetCubeRoot=long(forgeTarget.root(3)[0])
+    #print forgeTargetCubeRoot
+    #print "Cubed:"
+    forgeTargetCubed = pow(forgeTargetCubeRoot,3, n)
+    #print "{0:0{1}x}".format(forgeTargetCubed, length)
+    if (rsaVerify(forgeTargetCubeRoot,forgeMessage,e,n,1024)):
+        print "Forgery Signature verifies!"
+        print "Forged signature for: " + forgeMessage
+    else:
+        print "Forgery Failed!"
+
+
+set6challenge42()
