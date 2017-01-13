@@ -131,4 +131,33 @@ def set6challenge43():
             exit(0)
     print "Fail!"
 
-set6challenge43()
+#set6challenge43()
+
+
+def set6challenge44():
+    # Break Dsa with repeated k
+    y = 0x2d026f4bf30195ede3a088da85e398ef869611d0f68f0713d51c9c1a3a26c95105d915e2d8cdf26d056b86b8a7b85519b1c23cc3ecdc6062650462e3063bd179c2a6581519f674a61f1d89a1fff27171ebc1b93d4dc57bceb7ae2430f98a6a4d83d8279ee65d71c1203d2c96d65ebbf7cce9d32971c3de5084cce04a2e147821
+    msg1 = "Listen for me, you better listen for me now. "
+    s1 = 29097472083055673620219739525237952924429516683
+    r1 = 51241962016175933742870323080382366896234169532
+    hm1 = 0xa4db3de27e2db3e5ef085ced2bced91b82e0df19
+
+    msg2 = "Yeah me shoes a an tear up an' now me toes is a show a "
+    s2 = 506591325247687166499867321330657300306462367256
+    r2 = 51241962016175933742870323080382366896234169532
+    hm2 = 0xbc7ec371d951977cba10381da08fe934dea80314
+
+    mDiff = (hm1 - hm2 ) % q
+    sDiff = (s1 - s2) % q
+    sDiffInv = modInv(sDiff,q)[1]
+    k = (mDiff * sDiffInv) % q
+
+    x = recoverDsaPrivateKey(s1,k,msg1, r1, q)
+    print "Found x:"
+    hexX = "{0:x}".format(x)
+    print "0x" + hexX
+    print hashlib.sha1(hexX).hexdigest()
+
+
+
+set6challenge44()
