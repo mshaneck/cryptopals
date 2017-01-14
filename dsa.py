@@ -17,22 +17,22 @@ def genDsaKeys():
 def dsaSignMessage(message, x, g,p,q):
     r=0
     s=0
-    while (s == 0):
-        while (r == 0):
-            k = random.randint(0,q)
-            r = pow(g,k,p)%q
-        kinv = modInv(k,q)[1]
-        h = int(hashlib.sha1(message).hexdigest(),16)
-        s = (kinv*((h) + (x*r))) % q
+    #while (s == 0):
+    #    while (r == 0):
+    k = random.randint(0,q)
+    r = pow(g,k,p)%q
+    kinv = modInv(k,q)[1]
+    h = int(hashlib.sha1(message).hexdigest(),16)
+    s = (kinv*((h) + (x*r))) % q
     return (r,s)
 
 def dsaVerifyMessage(r,s,message, y,g,p,q):
     if (r<0 or r>q or s<0 or s>q):
         return False
-    w = modInv(s,q)[1]
-    u1 = (int(hashlib.sha1(message).hexdigest(),16) * w) % q
-    u2 = (r*w)%q
-    v = ((pow(g,u1,p)* pow(y,u2,p))%p)%q
+    w = modInv(s,q)[1]                                          # s = k^-1 * (h+xr)
+    u1 = (int(hashlib.sha1(message).hexdigest(),16) * w) % q     #u1 = hs^-1 = hk/(h+xr)
+    u2 = (r*w)%q                                                 # u2 = rs^-1 =
+    v = ((pow(g,u1,p)* pow(y,u2,p))%p)%q                        # v = g^(h/s)*g^(xr/s)
     if (v == r):
         return True
     return False

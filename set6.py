@@ -158,6 +158,42 @@ def set6challenge44():
     print "0x" + hexX
     print hashlib.sha1(hexX).hexdigest()
 
+#set6challenge44()
 
+def set6challenge45():
+    # DSA Parameter tampering
+    # First set g=0
+    # I have to disable the check for r=0 in the signature function, since this produces an r of 0
+    (x,y,g,p,q) = genDsaKeys()
+    g=0
+    msg1 = "Listen for me, you better listen for me now. "
+    f1 = "Hello World"
+    f2 = "Goodbye World"
+    (r,s) = dsaSignMessage(msg1, x, g,p,q)
+    print "Setting g=0"
+    print "R"
+    print r
+    print "S"
+    print s
+    print dsaVerifyMessage(r,s,msg1, y,g,p,q)
+    print dsaVerifyMessage(r,s,f1, y,g,p,q)
+    print dsaVerifyMessage(r,s,f2, y,g,p,q)
+    # g=0 means that r=0, which means that the signature works for all messages
 
-set6challenge44()
+    # Then set g=p+1
+    print "Setting g=p+1"
+    g=p+1
+    z=random.randint(2,p-1)
+    zInv = modInv(z,q)[1]
+    r = pow(y,z,p) % q
+    s = (r*zInv) % q
+
+    print dsaVerifyMessage(r,s,f1, y,g,p,q)
+    print dsaVerifyMessage(r,s,f2, y,g,p,q)
+
+    # g = p+1 means that g is 1, but y still stays g^x, so r in this case is g^xz and for
+    # v in the verification, the u1 component goes to 1, but the u2 compoenent reduces to z (r cancels out)
+    # so v is just g^xz, which is what r is set to
+    
+
+set6challenge45()
