@@ -115,7 +115,7 @@ def rsaStringEncrypt(s,e,n):
     if (m>n):
         print "Message is too large"
     #print "M:"
-    #rint m
+    #print m
     return rsaEncrypt(m,e,n)
 
 def rsaDecrypt(c,d,n):

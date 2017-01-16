@@ -5,6 +5,10 @@ from Crypto.Random import random
 from hashing import *
 from rsa_utils import *
 from dsa import *
+import math
+import binascii
+from decimal import *
+from subprocess import *
 
 def set6challenge41():
     # Connect to the server
@@ -194,6 +198,67 @@ def set6challenge45():
     # g = p+1 means that g is 1, but y still stays g^x, so r in this case is g^xz and for
     # v in the verification, the u1 component goes to 1, but the u2 compoenent reduces to z (r cancels out)
     # so v is just g^xz, which is what r is set to
-    
 
-set6challenge45()
+
+#set6challenge45()
+
+def c46Oracle(c, d, n):
+    # decrypt and return true if the last bit is even
+    # false if odd
+    p=rsaDecrypt(c,d,n)
+    #print p
+    return p%2 == 0
+
+def set6challenge46():
+    (e,d,n) = genRsa(1024, 15)
+    #print n
+    b64msg = "VGhhdCdzIHdoeSBJIGZvdW5kIHlvdSBkb24ndCBwbGF5IGFyb3VuZCB3aXRoIHRoZSBGdW5reSBDb2xkIE1lZGluYQ=="
+    msg = base64.b64decode(b64msg)
+    #print msg
+    origP = int(msg.encode("hex"),16)
+    ciphertext = rsaStringEncrypt(msg,e,n)
+
+    #(e,d,n)=genRsa(100, 15)
+    #print n, e, d
+    #m = "test string"
+    #ciphertext = rsaStringEncrypt(m,e,n)
+    #print "Plaintext: " + str(m)
+
+    #If the plaintext after doubling is even, doubling the plaintext didn't wrap the modulus
+    #    --- the modulus is an odd number.
+    #That means the plaintext is less than half the modulus.
+    # If the plaintext is odd, it is from teh upper half of the range
+    plaintextRange = [0,n]
+    twoEnc = rsaEncrypt(2,e,n)
+    k = int(math.ceil(math.log(n,2)))  # n. of iterations
+    # There is an issue with precision on this attacker
+    # My naive solution would consistently get the last character wrong
+    # But this solution almost always works.
+    getcontext().prec = k    # allows for 'precise enough' floats
+    l=Decimal(0)
+    u=Decimal(n)
+    for i in range(0,1024):
+        #print "\nIteration " + str(i)
+        #print plaintextRange
+        ciphertext = (ciphertext * twoEnc) % n
+        h = (l+u)/2
+        if (c46Oracle(ciphertext,d,n)):
+            # Even
+            #print "Even"
+            u=h
+        else:
+            #print "Odd"
+            l=h
+        #print "\t"*5, l,h, "{0:x}".format(h).decode("hex")
+        #if (plaintextRange[0]+2 == plaintextRange[1]):
+        #    print "Done: " + str(i)
+        #    break
+    #print l,h, "{0:x}".format(int(h)).decode("hex")
+    print "{0:x}".format(int(h)).decode("hex")
+    #print int(msg.encode("hex"),16)
+    #print n
+
+
+
+
+set6challenge46()
