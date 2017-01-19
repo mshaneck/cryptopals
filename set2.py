@@ -159,12 +159,28 @@ def aes_oracle(plaintext):
         prefix=random_string
     secretString = base64.b64decode("Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK")
     paddedPlaintext = pkcs7Padding(prefix+plaintext + secretString, AES.block_size)
-    print paddedPlaintext
+    #print paddedPlaintext
     #print len(secretString)
     #print len(paddedPlaintext)
     ciphertext = aes_128_ecb(paddedPlaintext, consistent_key, ENCRYPT)
     #print splitIntoBlocks(ciphertext.encode('hex'), AES.block_size*2)
     return ciphertext
+
+def addToDecryptionDictionary(prefixStr, crackDict, blockNumber, blockSize):
+    for c in range(256):
+        block = getHexBlock(aes_oracle(prefixStr+chr(c)), blockNumber, blockSize)
+        crackDict[block] = chr(c)
+
+
+def getHexBlock(ciphertext, i, blockSize):
+    block = ciphertext.encode('hex')[(i*blockSize)*2: (i+1)*blockSize*2]
+    #print "------"
+    #print block
+    #print (i*blockSize)*2
+    #print (i+1)*blockSize*2
+    #print "------"
+    return block
+
 
 def set2challenge12():
     USE_PREFIX=False
@@ -187,7 +203,8 @@ def set2challenge12():
         usingECB=True
     else:
         print "Not using ECB"
-        return
+
+        #return
 
     # Knowing the block size, build a dictionary for all possible last bytes for the first block:
     crack={}
@@ -209,27 +226,14 @@ def set2challenge12():
             if block in crack:
                 decryptedMessage += crack[block]
 
+    print "Decrypted:"
     print decryptedMessage
 
 
     # Print out the secret string
 
-def addToDecryptionDictionary(prefixStr, crackDict, blockNumber, blockSize):
-    for c in range(256):
-        block = getHexBlock(aes_oracle(prefixStr+chr(c)), blockNumber, blockSize)
-        crackDict[block] = chr(c)
 
-
-def getHexBlock(ciphertext, i, blockSize):
-    block = ciphertext.encode('hex')[(i*blockSize)*2: (i+1)*blockSize*2]
-    #print "------"
-    #print block
-    #print (i*blockSize)*2
-    #print (i+1)*blockSize*2
-    #print "------"
-    return block
-
-#set2challenge12()
+set2challenge12()
 
 def profileFor(email):
     #First strip out & and = from email
@@ -356,10 +360,10 @@ def set2challenge14():
             else:
                 # If its not there, we are done
                 break
-
+    print "Decrypted:"
     print decryptedMessage.rstrip('\n') # Rstrip since the plaintext already includes a newline
 
-#set2challenge14()
+set2challenge14()
 
 def set2challenge15():
     blockSize=8
