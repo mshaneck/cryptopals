@@ -160,7 +160,8 @@ def getNAvgHammingDistances(data, maxKeyLength):
         #hd = (float(hd1+hd2)/2.0)/float(keysize)
         #avgHDs.append([hd, keysize])
     avgHDs.sort()
-    #print avgHDs
+#    print avgHDs
+    #exit(1)
     return avgHDs
 
 
@@ -226,6 +227,7 @@ def set1challenge6():
     results=bestVigenereDecrypt(data, maxKeySize, False)
     print results[0]
     print results[1]
+    print len(results[1])
 
 #set1challenge6()
 

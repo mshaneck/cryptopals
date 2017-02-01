@@ -106,7 +106,8 @@ def genRsa(bits, tests):
             return (e,d,n)
 
 def rsaEncrypt(m,e,n):
-    return pow(m,e,n)
+    return long(gmpy2.powmod(m, e, n))
+    # return pow(m,e,n)
 
 def rsaStringEncrypt(s,e,n):
     #print s.encode("hex")
@@ -119,7 +120,8 @@ def rsaStringEncrypt(s,e,n):
     return rsaEncrypt(m,e,n)
 
 def rsaDecrypt(c,d,n):
-    return pow(c,d,n)
+    return long(gmpy2.powmod(c,d, n))
+    # return pow(c,d,n)
 
 def rsaStringDecrypt(c,d,n):
     m = pow(c,d,n)

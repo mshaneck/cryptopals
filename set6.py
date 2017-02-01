@@ -261,4 +261,226 @@ def set6challenge46():
 
 
 
-set6challenge46()
+#set6challenge46()
+
+def pkcs15Padding(mInt, byteLen):
+    # PKCS 1.5 pad m to byteLen
+    # 00 02 randompaddingstring 00 mInt
+    paddingString="00"
+    m = "{0:x}".format(mInt)
+    if (len(m)%2==1):
+        m = "0"+m
+    #print m
+    bytesNeeded = byteLen - 3 - (len(m)/2)
+    #print bytesNeeded
+    if (bytesNeeded<8):
+        #print bytesNeeded
+        return False
+    while("00" in paddingString):
+        paddingString = "{0:0{1}x}".format(random.getrandbits(bytesNeeded*8), bytesNeeded*2)
+    return int("0002"+paddingString+"00"+m, 16)
+
+def isPkcs15PaddingValid(m, byteLen, debugPrint):
+    # Convert int to hex string
+    mHex = "{0:0{1}x}".format(m, byteLen*2)
+    if (debugPrint):
+        print mHex
+    return mHex.startswith("0002")
+
+def removePkcs15Padding(mPadded, byteLen):
+    if (isPkcs15PaddingValid(mPadded, byteLen, False)):
+        m = "{0:0{1}x}".format(mPadded, byteLen*2)[2:]
+        for i in range(byteLen):
+            #print m[i*2:i*2+2]
+            if (m[i*2:i*2+2] == "00"):
+                return m[i*2+2:]
+    else:
+        return ""
+
+def set6challenge47():
+    print "Meh, just going to do the full case... Maybe that's a bad idea?"
+
+n=0
+e=0
+d=0
+
+def c48PkcsOracle(c, byteLen, debugPrint):
+    # decrypt with d,n
+    #print d,n
+    return isPkcs15PaddingValid(rsaDecrypt(c,d,n), byteLen, debugPrint)
+
+def unionInt(a):
+    b=[]
+    #print a
+    if (len(a)==1):
+        return a
+    for begin,end in sorted(a):
+        if b and b[-1][1] >= begin - 1:
+            b[-1][1] = max(b[-1][1], end)
+        else:
+            b.append([begin,end])
+    ret=[]
+    for x in b:
+        ret.append((x[0],x[1]))
+    return ret
+
+def incrementEncryptionCount(encCount):
+    encCount = encCount+1
+    if (encCount % 10000 == 0):
+        print "Encryption Count: " + str(encCount)
+    return encCount
+
+def set7challenge48():
+    # Full Bleichenbacher Padding Oracle Attack...
+    message = "let's kick it MC, like a football, cuz we coolio like that"
+    byteLen = 128
+    #print 32*8
+    #print "Sup"
+    #print message
+    #print message.encode("hex")
+    paddedMessage = pkcs15Padding(int(message.encode("hex"),16), byteLen)
+    encryptions=0
+    # print "{0:0{1}x}".format(paddedMessage, byteLen*2)
+    #print paddedMessage
+    #print isPkcs15PaddingValid(paddedMessage, byteLen)
+    #print removePkcs15Padding(paddedMessage, byteLen).decode("hex")
+    global e, d, n
+    (e,d,n) = genRsa(byteLen*8, 15)
+    # print "e, d, n"
+    # print e
+    # print "{0:0{1}x}".format(d, byteLen*2)
+    # print "{0:0{1}x}".format(n, byteLen*2)
+
+    c = rsaEncrypt(paddedMessage, e, n)
+
+    # print "{0:x}".format(c)
+
+    if (not c48PkcsOracle(c,byteLen, False)):
+        print "Initial ciphertext is not Pkcs 1.5 compliant"
+        exit(1)
+
+    # Blinding not needed
+    #first find s1
+    #print "N= "
+    #print n
+    B=pow(2,8*(byteLen-2))
+    #print B
+    # print "Initial Range:"
+    # print "{0:0{1}x}".format(2*B, byteLen*2)
+    # print "{0:0{1}x}".format(3*B-1, byteLen*2)
+    M=[ (2*B, (3*B)-1) ]
+    #print M
+    i=1
+    sp=0
+    sn=0
+    solutionNotFound=True
+    while(solutionNotFound):
+        if (i==1):
+            #print "Step 2a"
+            sn = int(n/(3*B))
+            # print "Starting search at: " + "{0:0{1}x}".format(sn, byteLen*2)
+            encryptions = incrementEncryptionCount(encryptions)
+            test = c*rsaEncrypt(sn,e,n)
+            while(not c48PkcsOracle(test,byteLen, False)):
+                sn = sn+1
+                encryptions = incrementEncryptionCount(encryptions)
+                test = c*rsaEncrypt(sn,e,n)
+            # print "Got s1 = " + "{0:0{1}x}".format(sn, byteLen*2)
+            # print "C*s^e = " + "{0:0{1}x}".format((c*pow(sn,e,n))%n, byteLen*2)
+            #c48PkcsOracle((c*pow(sn,e,n))%n, byteLen, False)
+        else:
+            if (len(M) > 1):
+                # Step 2b
+                print "Step 2b"
+                sn = sp+1
+                encryptions = incrementEncryptionCount(encryptions)
+                test = c*rsaEncrypt(sn,e,n)
+                while(not c48PkcsOracle(test,byteLen, False)):
+                    sn = sn+1
+                    encryptions = incrementEncryptionCount(encryptions)
+                    test = c*rsaEncrypt(sn,e,n)
+                # print "Got sn = " + "{0:0{1}x}".format(sn, byteLen*2)
+                # print "C*sn^e = " + "{0:0{1}x}".format((c*pow(sn,e,n))%n, byteLen*2)
+                #c48PkcsOracle((c*pow(sn,e,n))%n, byteLen, False)
+            else:
+                #print "Step 2c"
+                (a,b)=M[0]
+                # print a,b
+                r=int(2*(  ( (b*sp)-(2*B) )/ n  ))
+                # print r
+                rNotFound=True
+                #dffd = raw_input('Enter to continue')
+                while(r<n and rNotFound):
+                    #print "Checking r = " + str(r)
+                    r=r+1
+                    sn = int(((2*B)+(r*n))/b)-1
+                    upperS = int(((3*B)+(r*n))/a)
+                    # print sn
+                    # print upperS
+                    snNotFound=True
+                    while (sn < upperS and snNotFound):
+                        sn = sn+1
+                        # print "Checking sn = " + str(sn)
+                        encryptions = incrementEncryptionCount(encryptions)
+                        test = c*rsaEncrypt(sn,e,n)
+                        if (c48PkcsOracle(test, byteLen, False) ):
+                            # print "Found sn = " + "{0:0{1}x}".format(sn, byteLen*2)
+                            #c48PkcsOracle((c*pow(sn,e,n))%n, byteLen, False)
+                            snNotFound = False
+                            rNotFound=False
+
+                # print "A,B,R,Sn"
+                # print "{0:0{1}x}".format(a, byteLen*2)
+                # print "{0:0{1}x}".format(b, byteLen*2)
+                # print "{0:0{1}x}".format(r, byteLen*2)
+                # print "{0:0{1}x}".format(sn, byteLen*2)
+
+        #Step 3
+        newM = []
+        # print "Adjusting M ranges"
+        for ab in M:
+            (a,b) = ab
+            # print "Existing range:"
+            # print "{0:0{1}x}".format(a, byteLen*2)
+            # print "{0:0{1}x}".format(b, byteLen*2)
+            r = ((a*sn)-(3*B)+1)/n
+            rEnd = ((b*sn)-(2*B))/n
+            # print "R from and to:"
+            # print "{0:0{1}x}".format(r, byteLen*2)
+            # print "{0:0{1}x}".format(rEnd, byteLen*2)
+            while (r<=rEnd):
+            #for r in range(rStart, rEnd+1):
+                # print "R:"
+                # print r
+                newA = ((2*B)+(r*n))/sn
+                newB = ((3*B)-1+(r*n))/sn
+                # print "New A and B"
+                # print "{0:0{1}x}".format(newA, byteLen*2)
+                # print "{0:0{1}x}".format(newB, byteLen*2)
+
+                #Something wrong is in here...
+                # The produced range is not correct and does not contain the solution...
+                if (newB >= a and newA <= b ):
+                    newM.append((max(a,newA+1), min(b, newB ) ))
+                r = r+1
+        M = unionInt(newM)
+        # print "New M ranges"
+        # for ran in M:
+        #     print "{0:0{1}x}".format(ran[0], byteLen*2)
+        #     print "{0:0{1}x}".format(ran[1], byteLen*2)
+
+
+        #Step 4
+        # Find solution
+        if (len(M) == 1 and M[0][0] == M[0][1]):
+            print "Solution is " + "{0:0{1}x}".format(M[0][0], byteLen*2)
+            print "Plaintext = " + removePkcs15Padding(M[0][0], byteLen).decode("hex")
+            solutionNotFound=False
+
+
+        sp = sn
+        i = i+1
+
+    print "Yay!"
+
+set7challenge48()

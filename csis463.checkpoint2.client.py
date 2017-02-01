@@ -5,7 +5,7 @@ import sys, getopt, socket
 
 BUFFER_SIZE = 2048
 port=4632
-host="127.0.0.1"
+host="10.101.1.10"
 
 def checkpoint2_oracle(plaintext, sock):
     if (plaintext == ""):
