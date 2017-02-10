@@ -330,9 +330,9 @@ def incrementEncryptionCount(encCount):
         print "Encryption Count: " + str(encCount)
     return encCount
 
-def set7challenge48():
+def set6challenge48():
     # Full Bleichenbacher Padding Oracle Attack...
-    message = "let's kick it MC, like a football, cuz we coolio like that"
+    message = "let's kick it MC, like a football, cuz we coolio like thato"
     byteLen = 128
     #print 32*8
     #print "Sup"
@@ -483,4 +483,4 @@ def set7challenge48():
 
     print "Yay!"
 
-set7challenge48()
+set6challenge48()

@@ -67,6 +67,8 @@ def englishScore(hexStr):
                 letterCount=letterCount+2
             if c.upper() in "ETAOIN SHRDLU":
                 letterCount=letterCount+3
+            if c in "LXCF0123456789{_}": #The last bit is for AlexCTF2017
+                letterCount = letterCount+3
         #print letterCount, len(hexStr)
         baseScore = float(letterCount)/len(hexStr)
         #words=hexStr.split(" ")
@@ -264,7 +266,7 @@ def set1challenge8():
         for line in f:
             # Look for two blocks (16 bytes, i.e. 32 characters) that have a hamming distance of 0
             line = line.rstrip('\n')
-            print isECB(line.decode('hex'))
+            #print isECB(line.decode('hex'))
             #print len(line)
             for i in range(0,10):
                 for j in range(i+1,10):

@@ -55,13 +55,13 @@ def removePkcs7Padding(data, blockSize):
     else:
         return data
 
-def set2challenges9():
+def set2challenge9():
     print pkcs7Padding("YELLOW SUBMARINE", 20)
     print pkcs7Padding("Testing Testing 123", 10)
     print pkcs7Padding("This is a test", 14)
     print pkcs7Padding("Test2", 75)
 
-#set2challenge()
+#set2challenge9()
 
 def aes_128_ecb(input, key, mode):
     cipher = AES.new(key, AES.MODE_ECB)
@@ -111,6 +111,15 @@ def set2challenge10():
     print "#########################################"
     decrypted = aes_128_cbc(ciphertext, key, iv, DECRYPT)
     print decrypted
+    print "#########################################"
+    print "#########################################"
+    with open('set2challenge10.txt', 'r') as myfile:
+            data=myfile.read().replace('\n', '')
+    data= base64.b64decode(data)
+    decrypted = aes_128_cbc(iv+data, key, iv, DECRYPT)
+    print decrypted
+    print "#########################################"
+    print "#########################################"
 
 #set2challenge10()
 
@@ -233,7 +242,7 @@ def set2challenge12():
     # Print out the secret string
 
 
-set2challenge12()
+#set2challenge12()
 
 def profileFor(email):
     #First strip out & and = from email
@@ -363,7 +372,7 @@ def set2challenge14():
     print "Decrypted:"
     print decryptedMessage.rstrip('\n') # Rstrip since the plaintext already includes a newline
 
-set2challenge14()
+#set2challenge14()
 
 def set2challenge15():
     blockSize=8
