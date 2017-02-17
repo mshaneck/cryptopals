@@ -6,7 +6,7 @@ import sys, getopt, socket
 
 BUFFER_SIZE = 2048
 port=4633
-host="127.0.0.1"
+host="10.101.1.10"
 
 def cbcPaddingOracleGuess(cipherblock, guess, byte, currentPlaintext):
     # currentPlaintext is what we know so far about the block
@@ -106,7 +106,7 @@ try:
 
         #print decryptedBlock
         plaintext = plaintext + decryptedBlock
-        #print plaintext 
+        print plaintext
     print removePkcs7Padding(plaintext, 16)
     #challenge17_consumeCiphertext(ciphertext)
 except socket.error:

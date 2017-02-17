@@ -8,7 +8,7 @@ from struct import *
 
 ENCRYPT="e"
 DECRYPT="d"
-USE_PREFIX=True
+#USE_PREFIX=True
 
 class PaddingNotValidException(Exception):
     pass
@@ -160,12 +160,13 @@ random_string = getRandomString()
 #print len(random_string)
 #print len(random_string) % 16
 
-def aes_oracle(plaintext):
+def aes_oracle(plaintext, USE_PREFIX):
     #print plaintext
     #print len(plaintext)
     prefix = ""
     if (USE_PREFIX):
         prefix=random_string
+    #print prefix
     secretString = base64.b64decode("Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK")
     paddedPlaintext = pkcs7Padding(prefix+plaintext + secretString, AES.block_size)
     #print paddedPlaintext
@@ -175,9 +176,9 @@ def aes_oracle(plaintext):
     #print splitIntoBlocks(ciphertext.encode('hex'), AES.block_size*2)
     return ciphertext
 
-def addToDecryptionDictionary(prefixStr, crackDict, blockNumber, blockSize):
+def addToDecryptionDictionary(prefixStr, crackDict, blockNumber, blockSize, USE_PREFIX):
     for c in range(256):
-        block = getHexBlock(aes_oracle(prefixStr+chr(c)), blockNumber, blockSize)
+        block = getHexBlock(aes_oracle(prefixStr+chr(c), USE_PREFIX), blockNumber, blockSize)
         crackDict[block] = chr(c)
 
 
@@ -195,20 +196,20 @@ def set2challenge12():
     USE_PREFIX=False
     A="A"
     # Discover block size by feeding ECB oracle increasing size inputs to discover the block size
-    ctxtlen=len(aes_oracle(A))
+    ctxtlen=len(aes_oracle(A, USE_PREFIX))
     blockSize=-1
     for i in range(64):
-        ctxt = aes_oracle(A*i)
+        ctxt = aes_oracle(A*i, USE_PREFIX)
         if len(ctxt) > ctxtlen:
             blockSize = len(ctxt)-ctxtlen
             #print blockSize
             break
 
-    numberOfUnknownBlocks = len(aes_oracle(""))/blockSize
+    numberOfUnknownBlocks = len(aes_oracle("", USE_PREFIX))/blockSize
     #print numberOfUnknownBlocks, " total unknown blocks"
 
     # detect that it is using ECB mode
-    if (isECB(aes_oracle(A*(2*blockSize)))):
+    if (isECB(aes_oracle(A*(2*blockSize), USE_PREFIX))):
         usingECB=True
     else:
         print "Not using ECB"
@@ -224,8 +225,8 @@ def set2challenge12():
         # j is the block I need to keep
         # Decrypt the block iteratively, since you can
         for i in range(blockSize):
-            addToDecryptionDictionary(A*(blockSize-i-1)+decryptedMessage, crack, j, blockSize)
-            block = getHexBlock(aes_oracle(A*(blockSize-i-1)), j, blockSize)
+            addToDecryptionDictionary(A*(blockSize-i-1)+decryptedMessage, crack, j, blockSize, USE_PREFIX)
+            block = getHexBlock(aes_oracle(A*(blockSize-i-1), USE_PREFIX), j, blockSize)
 
             # at the very end, after the last byte,
             # the padding changes since the size of the message is changing
@@ -250,7 +251,7 @@ def profileFor(email):
     email = email.replace("=","")
 
     profileString = "email="+email+"&uid=10&role=user"
-    print parseCookie(profileString)
+    #print parseCookie(profileString)
     return profileString
 
 
@@ -262,15 +263,12 @@ def parseCookie(cookie):
         kvObject[kv[0]] = kv[1]
     return kvObject
 
-
-
 def set2challenge13():
     randomKey = getRandomAESKey()
 
-    "email=foo@bar.co m&uid=10&role=us er"
-    "email=xxxxxxxxxx adminBBBBBBBBBBB &uid=10&role=use r"
-    "email=fooby@bar. com&uid=10&role= adminBBBBBBBBBBB"
-
+    #profile1="email=xxxxxxxxxx admin&uid=10&rol e=user"
+    #profile2="email=fooby@bar. com&uid=10&role= user"
+    #profile3="email=fooby@bar. com&uid=10&role= admin&uid=10&ro"
     profile1 = profileFor("xxxxxxxxxxadmin"+chr(11)*11)
     profile2 = profileFor("fooby@bar.com")
 
@@ -289,10 +287,10 @@ def set2challenge14():
     USE_PREFIX=True
     A="A"
     # Discover block size by feeding ECB oracle increasing size inputs to discover the block size
-    ctxtlen=len(aes_oracle(""))
+    ctxtlen=len(aes_oracle("", USE_PREFIX))
     blockSize=-1
     for i in range(64):
-        ctxt = aes_oracle(A*i)
+        ctxt = aes_oracle(A*i, USE_PREFIX)
         if len(ctxt) > ctxtlen:
             blockSize = len(ctxt)-ctxtlen
             #print blockSize
@@ -301,14 +299,14 @@ def set2challenge14():
 
     # detect that it is using ECB mode
     # Need to use 3 blocks of A since we don't know how long the prefix string is
-    if (isECB(aes_oracle(A*(3*blockSize)))):
+    if (isECB(aes_oracle(A*(3*blockSize), USE_PREFIX))):
         usingECB=True
         #print "Using ECB"
     else:
         print "Not using ECB"
         return
 
-    blocks = splitIntoBlocks(aes_oracle(A*(3*blockSize)).encode('hex'), blockSize*2)
+    blocks = splitIntoBlocks(aes_oracle(A*(3*blockSize), USE_PREFIX).encode('hex'), blockSize*2)
     #print blocks;
     # Find the blocks that match our input
     x=-1
@@ -330,7 +328,7 @@ def set2challenge14():
     for i in range(blockSize):
         testplaintext = A*2*blockSize + A*i + 'Z'
         #print testplaintext
-        ciphertext = aes_oracle(testplaintext)
+        ciphertext = aes_oracle(testplaintext, USE_PREFIX)
         blocks=splitIntoBlocks(ciphertext.encode('hex'), blockSize*2)
         if (blocks[x] == blocks[y]):
             offset=i
@@ -339,7 +337,7 @@ def set2challenge14():
     print "Offset is ", offset
 
     # Compute the number of unknown blocks
-    numberOfUnknownBlocks = len(aes_oracle(""))/blockSize - x
+    numberOfUnknownBlocks = len(aes_oracle("", USE_PREFIX))/blockSize - x
 
     # Now we can proceed with the previous algorithm, just adding A*offset before our strings
     # and adding x to the j block offset
@@ -353,8 +351,8 @@ def set2challenge14():
         # j is the block I need to keep
         # Decrypt the block iteratively, since you can
         for i in range(blockSize):
-            addToDecryptionDictionary(A*offset + A*(blockSize-i-1)+decryptedMessage, crack, j+x, blockSize)
-            block = getHexBlock(aes_oracle(A*offset + A*(blockSize-i-1)), j+x, blockSize)
+            addToDecryptionDictionary(A*offset + A*(blockSize-i-1)+decryptedMessage, crack, j+x, blockSize, USE_PREFIX)
+            block = getHexBlock(aes_oracle(A*offset + A*(blockSize-i-1), USE_PREFIX), j+x, blockSize)
 
             # at the very end, after the last byte,
             # the padding changes since the size of the message is changing
@@ -396,7 +394,7 @@ def c16_cbc_encrypt_oracle(plaintext):
 
 def c16_cbc_decrypt_oracle(ciphertext):
     plaintext = removePkcs7Padding(aes_128_cbc(ciphertext, consistent_key, "", DECRYPT), AES.block_size)
-    #print plaintext
+    print plaintext
     #print splitIntoBlocks(plaintext, 16)
     pairs = plaintext.split(";")
     for pair in pairs:

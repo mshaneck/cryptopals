@@ -86,7 +86,7 @@ def set3challenge17():
 
 		decryptedBlock = ""
 		paddingStart = -1
-		#print "Guessing block ", block
+		print "Guessing block ", block
 		# Repeat for each byte in the block, increasing the padding guess and building up the final parts
 		for byte in range(16):
 			# We will be guessing byte 16-byte-1
@@ -112,20 +112,20 @@ def set3challenge17():
 						continue
 					decryptedBlock = chr(b)+decryptedBlock
 					guessedLastByte = True
-					#print "Added ", b
-					#print "Decrypted block now '", decryptedBlock, "'"
+					#print "Added "+ hex(b)
+					print "Decrypted block now '"+ decryptedBlock+ "'"
 					break
 			if (lastByte and not guessedLastByte):
 				decryptedBlock = chr(1)+decryptedBlock
 
 
-		#print decryptedBlock
+		print decryptedBlock
 		plaintext = plaintext + decryptedBlock
 
 	print removePkcs7Padding(plaintext, 16)
 	#challenge17_consumeCiphertext(ciphertext)
 
-#set3challenge17()
+set3challenge17()
 
 
 def aes_128_ctr(plaintext, key, nonce):
