@@ -12,6 +12,7 @@ from decimal import *
 from subprocess import *
 from set2 import *
 from set3 import *
+from hashing import *
 
 def genCbcMac(message, key, iv):
     ciphertext = aes_128_cbc(pkcs7Padding(message,16), key, iv, ENCRYPT)
@@ -134,4 +135,139 @@ def set7challenge51():
     print sessionCookie
     print realCookie
 
-set7challenge51()
+#set7challenge51()
+
+print mdsuck("0dde4118629163a019cb8489d780ecbf")
+print mdsuck("testing")
+print mdsuckmore("testing")
+# print MDSuckWithState(0xdead,"test",4)
+
+def genMDSuckCollisions(n):
+    # Generate 2^n collisions
+
+    # Produce a list of n pairs, each of which collides with the same previous state.
+    # So you can take any one from each pair, and produce a collision
+    #Start at initial state 0xBEEF
+    internalState = 0xBEEF
+    collisionBlocks = []
+    hashCalls = 0
+    # Use _process_mdsuck_chunk(chunk, h)
+    for i in range(0,n):
+        while True:
+            chunk1 = "{0:0{1}x}".format(random.getrandbits(64), 16)
+            chunk2 = "{0:0{1}x}".format(random.getrandbits(64), 16)
+            # print chunk1.encode("hex")
+            # print chunk2.encode("hex")
+            #print len(chunk1)
+            #print len(chunk2)
+            newState1 = process_mdsuck_chunk(chunk1, internalState)
+            newState2 = process_mdsuck_chunk(chunk2, internalState)
+            hashCalls  = hashCalls  + 2
+            if (newState1 == newState2):
+                print "Got collision " + str(i)
+                #print chunk1
+                #print chunk2
+                collisionBlocks.append((chunk1,chunk2))
+                internalState = newState1
+                break
+    print "Got the " + str(pow(2,n)) + " collisions, took " + str(hashCalls) + " calls to the hash function"
+    return collisionBlocks
+
+def superCrapHash(m):
+    return mdsuck(m)+mdsuckmore(m)
+
+def getCollisionString(cb, indexString, numBlocks):
+    retStr = ""
+    for i in range(0,numBlocks):
+        retStr += cb[i][int(indexString[i])]
+    return retStr
+
+def set7challenge52():
+    # First generate 2^n collisions
+    print "Generating 2^2 collisions"
+    cb = genMDSuckCollisions(2)
+    for a in range(0,2):
+        for b in range(0,2):
+            print "MDSuck  hash for " + cb[0][a]+cb[1][b] + " is " + mdsuck(cb[0][a]+cb[1][b])
+
+    print "Super Crap Hash:"
+    print superCrapHash("testing")
+
+    # Part 2: Generate 2^(b2/2) colliding messages in f.
+    # b2 = length of mdsuckmore which is 24 bits, so generate 2^(24/2) collisions
+    cb = genMDSuckCollisions(12)
+    print "Collisions generated in MDSuck, now looking for collisions in MDSuckMore"
+    hashCalls = 0
+    for i in range(0,2**12):
+        x = '{0:012b}'.format(i)
+        for j in range(0,2**12):
+            if i != j:
+                y = '{0:012b}'.format(j)
+                check1 = getCollisionString(cb,x,12)
+                check2 = getCollisionString(cb,y,12)
+                hash1 = mdsuckmore(check1)
+                hash2 = mdsuckmore(check2)
+                hashCalls = hashCalls + 2
+                if (hash1 == hash2):
+                    print "Got a collision: "
+                    print check1
+                    print check2
+                    print "Super Crap Hash of those are:"
+                    print superCrapHash(check1)
+                    print superCrapHash(check2)
+                    print "Got the collision, took " + str(hashCalls) + " more calls to the hash function"
+                    exit(0)
+    print "Did not find any collisions... To bad... So sad..."
+
+#set7challenge52()
+
+def findCollidingMessages(k):
+    # find messages of length (k, k + 2^k - 1)
+    internalState = 0xBEEF
+    collidingBlocks=[]
+    """
+    Here's how:
+
+Starting from the hash function's initial state, find a collision between a single-block message and a message of 2^(k-1)+1 blocks.
+DO NOT hash the entire long message each time. Choose 2^(k-1) dummy blocks, hash those, then focus on the last block.
+Take the output state from the first step.
+Use this as your new initial state and find another collision between a single-block message and a message of 2^(k-2)+1 blocks.
+Repeat this process k total times. Your last collision should be between a single-block message and a message of 2^0+1 = 2 blocks.
+Now you can make a message of any length in (k, k + 2^k - 1) blocks by choosing the appropriate message (short or long) from each pair.
+"""
+    for i in range(k):
+        # find collision between single block message and 2^(k-1-i)+1 blocks
+        longmsg = "{0:0{1}x}".format(random.getrandbits(64*(2**(k-1-i))), 16)
+        longState = 0xBEEF
+        longMsgBlocks = splitIntoBlocks(longmsg, 16)
+        for b in longMsgBlocks:
+            longState = process_mdsuck_chunk(chunk1, internalState)
+        while True:
+            chunk1 = "{0:0{1}x}".format(random.getrandbits(64), 16)
+            chunk2 = "{0:0{1}x}".format(random.getrandbits(64), 16)
+            # print chunk1.encode("hex")
+            # print chunk2.encode("hex")
+            #print len(chunk1)
+            #print len(chunk2)
+            newState1 = process_mdsuck_chunk(chunk1, internalState)
+            newState2 = process_mdsuck_chunk(chunk2, internalState)
+            hashCalls  = hashCalls  + 2
+            if (newState1 == newState2):
+                #print "Got collision " + str(i)
+                #print chunk1
+                #print chunk2
+                collidingBlocks.append((chunk1,chunk2))
+                internalState = newState1
+                break
+"""
+Now we're ready to attack a long message M of 2^k blocks.
+
+Generate an expandable message of length (k, k + 2^k - 1) using the strategy outlined above.
+Hash M and generate a map of intermediate hash states to the block indices that they correspond to.
+From your expandable message's final state, find a single-block "bridge" to intermediate state in your map. Note the index i it maps to.
+Use your expandable message to generate a prefix of the right length such that len(prefix || bridge || M[i..]) = len(M).
+The padding in the final block should now be correct, and your forgery should hash to the same value as M.
+"""
+
+
+def set7challenge53():

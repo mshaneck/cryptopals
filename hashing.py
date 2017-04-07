@@ -2,6 +2,7 @@
 import struct
 import io
 from set1 import *
+from set2 import *
 import hashlib
 
 def leftrotate(i, n):
@@ -310,3 +311,189 @@ def verifySHA256Mac(msg, key, tag):
 #HMAC_SHA1("", "")   = 0xfbdb1d1b18aa6c08324b7d64b71fb76370690e1d
 #HMAC_SHA1("key", "The quick brown fox jumps over the lazy dog")   = 0xde7c9b85b8b78aa6bc8a7a36f70a90701c9db4d9
 #HMAC_SHA1("key", "The quick brown fox jumps over the lazy dog\n")   = 0xc880ba6df628c22978b20215b5f982d6ac24b9dd
+
+def process_mdsuck_chunk(chunk, h):
+    return _process_mdsuck_chunk(chunk, h)
+
+def _process_mdsuck_chunk(chunk, h):
+    """Process a chunk of data and return the new digest variables."""
+    assert len(chunk) == 16
+    #print "Processing chunk: " + chunk.encode("hex")
+    #print h
+    #print hex(h)
+    c = aes_128_ecb(chunk, struct.pack(">Q", h)+struct.pack(">Q", 0), ENCRYPT)[0:2]
+    #print c.encode("hex")
+    return int(c.encode("hex"),16)
+
+class MDSuckHash(object):
+    name = 'python-smdsuck'
+    # Size in bits
+    digest_size = 2
+    block_size = 16
+
+    def __init__(self):
+        # Initial digest variables
+        self._h = 0xBEEF
+
+        # bytes object with 0 <= len < 64 used to store the end of the message
+        # if the message length is not congruent to 64
+        self._unprocessed = b''
+        # Length in bytes of all data that has been processed so far
+        self._message_byte_length = 0
+
+    def setInternalState(self,h, msgLen):
+        self._h=h
+        self._message_byte_length = msgLen
+        #print "State initialized to: " + "{0:0{1}x}".format(self._h[0],8) + ", " + "{0:0{1}x}".format(self._h[1],8) + ", "  + "{0:0{1}x}".format(self._h[2],8) + ", "  + "{0:0{1}x}".format(self._h[3],8) + ", " + "{0:0{1}x}".format(self._h[4],8)
+        #print "Message length set to " + str(msgLen)
+
+    def update(self, arg):
+        """Update the current digest.
+        This may be called repeatedly, even after calling digest or hexdigest.
+
+        Arguments:
+            arg: bytes, bytearray, or BytesIO object to read from.
+        """
+        if isinstance(arg, (bytes, bytearray)):
+            arg = io.BytesIO(arg)
+
+        # Try to build a chunk out of the unprocessed data, if any
+        chunk = self._unprocessed + arg.read(16 - len(self._unprocessed))
+
+        # Read the rest of the data, 16 bytes at a time
+        while len(chunk) == 16:
+            self._h = _process_mdsuck_chunk(chunk, self._h)
+            self._message_byte_length += 16
+            chunk = arg.read(16)
+            #print "State set to: " + "{0:0{1}x}".format(self._h[0],8) + ", " + "{0:0{1}x}".format(self._h[1],8) + ", "  + "{0:0{1}x}".format(self._h[2],8) + ", "  + "{0:0{1}x}".format(self._h[3],8) + ", " + "{0:0{1}x}".format(self._h[4],8)
+
+        self._unprocessed = chunk
+        return self
+
+    def digest(self):
+        """Produce the final hash value (big-endian) as a bytes object"""
+        return struct.pack(b'>I', self._produce_digest())
+
+    def hexdigest(self):
+        """Produce the final hash value (big-endian) as a hex string"""
+        return "{0:0{1}x}".format(self._produce_digest(), 4)
+
+    def _produce_digest(self):
+        """Return finalized digest variables for the data processed so far."""
+        # Pre-processing:
+        message = self._unprocessed
+        message_byte_length = self._message_byte_length + len(message)
+        #print "Msg Byte Len: " + str(message_byte_length)
+
+        message = pkcs7Padding(message, 16)
+        # Process the final chunk
+        # At this point, the length of the message is either 64 or 128 bytes.
+        h = _process_mdsuck_chunk(message, self._h)
+        #print "State set to: " + "{0:0{1}x}".format(h[0],8) + ", " + "{0:0{1}x}".format(h[1],8) + ", "  + "{0:0{1}x}".format(h[2],8) + ", "  + "{0:0{1}x}".format(h[3],8) + ", " + "{0:0{1}x}".format(h[4],8)
+
+        if len(message) == 16:
+            return h
+        return _process_mdsuck_chunk(message[16:], h)
+
+def mdsuck(data):
+    return MDSuckHash().update(data).hexdigest()
+
+def MDSuckWithState(h,data,origlen):
+    s=MDSuckHash()
+    s.setInternalState(h,origlen)
+    return s.update(data).hexdigest()
+
+
+
+
+def process_mdsuckmore_chunk(chunk, h):
+    return _process_mdsuckmore_chunk(chunk, h)
+
+def _process_mdsuckmore_chunk(chunk, h):
+    """Process a chunk of data and return the new digest variables."""
+    assert len(chunk) == 16
+    #print "Processing chunk: " + chunk.encode("hex")
+    #print h
+    #print hex(h)
+    c = aes_128_ecb(chunk, struct.pack(">Q", h)+struct.pack(">Q", 0), ENCRYPT)[0:3]
+    #print c.encode("hex")
+    return int(c.encode("hex"),16)
+
+class MDSuckMoreHash(object):
+    name = 'python-smdsuckmore'
+    # Size in bits
+    digest_size = 2
+    block_size = 16
+
+    def __init__(self):
+        # Initial digest variables
+        self._h = 0xBEEEEF
+
+        # bytes object with 0 <= len < 64 used to store the end of the message
+        # if the message length is not congruent to 64
+        self._unprocessed = b''
+        # Length in bytes of all data that has been processed so far
+        self._message_byte_length = 0
+
+    def setInternalState(self,h, msgLen):
+        self._h=h
+        self._message_byte_length = msgLen
+        #print "State initialized to: " + "{0:0{1}x}".format(self._h[0],8) + ", " + "{0:0{1}x}".format(self._h[1],8) + ", "  + "{0:0{1}x}".format(self._h[2],8) + ", "  + "{0:0{1}x}".format(self._h[3],8) + ", " + "{0:0{1}x}".format(self._h[4],8)
+        #print "Message length set to " + str(msgLen)
+
+    def update(self, arg):
+        """Update the current digest.
+        This may be called repeatedly, even after calling digest or hexdigest.
+
+        Arguments:
+            arg: bytes, bytearray, or BytesIO object to read from.
+        """
+        if isinstance(arg, (bytes, bytearray)):
+            arg = io.BytesIO(arg)
+
+        # Try to build a chunk out of the unprocessed data, if any
+        chunk = self._unprocessed + arg.read(16 - len(self._unprocessed))
+
+        # Read the rest of the data, 16 bytes at a time
+        while len(chunk) == 16:
+            self._h = _process_mdsuckmore_chunk(chunk, self._h)
+            self._message_byte_length += 16
+            chunk = arg.read(16)
+            #print "State set to: " + "{0:0{1}x}".format(self._h[0],8) + ", " + "{0:0{1}x}".format(self._h[1],8) + ", "  + "{0:0{1}x}".format(self._h[2],8) + ", "  + "{0:0{1}x}".format(self._h[3],8) + ", " + "{0:0{1}x}".format(self._h[4],8)
+
+        self._unprocessed = chunk
+        return self
+
+
+    def digest(self):
+        """Produce the final hash value (big-endian) as a bytes object"""
+        return struct.pack(b'>I', self._produce_digest())
+
+    def hexdigest(self):
+        """Produce the final hash value (big-endian) as a hex string"""
+        return "{0:0{1}x}".format(self._produce_digest(), 6)
+
+    def _produce_digest(self):
+        """Return finalized digest variables for the data processed so far."""
+        # Pre-processing:
+        message = self._unprocessed
+        message_byte_length = self._message_byte_length + len(message)
+        #print "Msg Byte Len: " + str(message_byte_length)
+
+        message = pkcs7Padding(message, 16)
+        # Process the final chunk
+        # At this point, the length of the message is either 64 or 128 bytes.
+        h = _process_mdsuckmore_chunk(message, self._h)
+        #print "State set to: " + "{0:0{1}x}".format(h[0],8) + ", " + "{0:0{1}x}".format(h[1],8) + ", "  + "{0:0{1}x}".format(h[2],8) + ", "  + "{0:0{1}x}".format(h[3],8) + ", " + "{0:0{1}x}".format(h[4],8)
+
+        if len(message) == 16:
+            return h
+        return _process_mdsuckmore_chunk(message[16:], h)
+
+def mdsuckmore(data):
+    return MDSuckMoreHash().update(data).hexdigest()
+
+def MDSuckMoreWithState(h,data,origlen):
+    s=MDSuckMoreHash()
+    s.setInternalState(h,origlen)
+    return s.update(data).hexdigest()

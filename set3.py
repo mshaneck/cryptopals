@@ -94,7 +94,7 @@ def set3challenge17():
 			lastByte = False
 			if (lastBlock and i==15):
 				lastByte=True
-				#print "Guessing the last byte of the ciphertext"
+				print "Guessing the last byte of the ciphertext"
 			#print "    Guessing byte ", i, " (really ", byte, ")"
 
 			guessedLastByte = False
@@ -105,6 +105,8 @@ def set3challenge17():
 				# Send the modified block and the next block to the oracle
 				if (challenge17_consumeCiphertext((modblock+ctxtBlocks[block+1]).decode('hex'))):
 					# Padding is correct, so our guess is right
+					if (lastBlock):
+						print "Byte: " + str(b)
 					if (lastByte and b==1):
 						# this may not be correct
 						# keep going and try to see if another one matches. If it does, that is correct, otherwise, this is the last byte
@@ -221,6 +223,13 @@ def set3challenge1920helper(filename):
 
 def set3challenge19():
 	set3challenge1920helper('set3.challenge19.txt')
+
+def csis463checkpoint4Generator():
+    data = [aes_128_ctr((line.rstrip('\n')), consistent_key, pack('<q', 0)) for line in open("csis463.checkpoint4.txt", 'r')]
+    for line in data:
+        print base64.b64encode(line)
+
+csis463checkpoint4Generator()
 
 #set3challenge19()
 
