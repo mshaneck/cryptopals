@@ -73,6 +73,10 @@ try:
         if (response == "True"):
             print "We win! Key length is " + str(i)
             print "Forged Mac for "+message+padding+additionalMsg
+            response = readFile.readline().rstrip()
+            while("END" not in response):
+                print response
+                response = readFile.readline()
             exit()
     print "Did not forge the message... :("
 
