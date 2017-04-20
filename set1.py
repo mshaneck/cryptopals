@@ -19,6 +19,7 @@ def hexxor(hexStr1, hexStr2):
     assert len(hexStr1) == len(hexStr2)
     return "{0:0{1}x}".format(int(hexStr1, 16) ^ int(hexStr2, 16), len(hexStr1))
 #print hexxor("1c0111001f010100061a024b53535009181c", "686974207468652062756c6c277320657965")
+print hexxor("65417439774c784d56415a44784b76423265775257736a7369374e326d4c6655", "5c070e581f1e4a152e040e274b724720445c31312e3e102b05067c5738200d07")
 
 #Set 1, Challenge 3
 def set1challenge3():

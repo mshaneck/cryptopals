@@ -232,7 +232,7 @@ def main(argv):
     mlist=[]
     alist=[]
     try:
-        opts, args = getopt.getopt(argv,"gb:t:ma:b:reds:p:c:",["genprime", "bits=", "tests=", "modinv", "genrsa", "encrypt", "decrypt", "private=", "modulus=", "ciphertext=", "message=", "string", "plaintext=", "crt", "mlist=", "alist="])
+        opts, args = getopt.getopt(argv,"gb:t:ma:b:reds:p:c:",["checkpoint6", "genprime", "bits=", "tests=", "modinv", "genrsa", "encrypt", "decrypt", "private=", "modulus=", "ciphertext=", "message=", "string", "plaintext=", "crt", "mlist=", "alist="])
     except getopt.GetoptError:
         print 'blerg'
         sys.exit(2)
@@ -240,6 +240,9 @@ def main(argv):
         if opt in ("-g", "--genprime"):
             commands = commands+1
             command = "g"
+        if opt in ("--checkpoint6"):
+            commands = commands+1
+            command = "checkpoint6"
         if opt in ("--crt"):
             commands = commands+1
             command = "c"
@@ -306,6 +309,34 @@ def main(argv):
 
     if (command == "r"):
         print genRsa(bits, tests)
+
+    if (command == "checkpoint6"):
+        message = "https://www.youtube.com/watch?v=MtN1YnoL46Q"
+        (e1,d1,n1) = genRsa(1024,15)
+        (e2,d2,n2) = genRsa(1024,15)
+        (e3,d3,n3) = genRsa(1024,15)
+        c1 = rsaStringEncrypt(message,e1,n1)
+        c2 = rsaStringEncrypt(message,e2,n2)
+        c3 = rsaStringEncrypt(message,e3,n3)
+
+
+        print "Verified:"
+        print rsaStringDecrypt(c1, d1, n1)
+
+        print "RSA1:"
+        print "n1=" + str(n1)
+        print "e1=" + str(e1)
+        print "c1=" + str(c1)
+
+        print "RSA2:"
+        print "n2=" + str(n2)
+        print "e2=" + str(e2)
+        print "c2=" + str(c2)
+
+        print "RSA3:"
+        print "n3=" + str(n3)
+        print "e3=" + str(e3)
+        print "c3=" + str(c3)
 
     if (command == "e"):
         # Make sure that modulus has been specified
